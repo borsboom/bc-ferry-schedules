@@ -26,16 +26,16 @@ impl RouteGroup {
     }
 }
 
-impl Terminal {
+impl TerminalCode {
     fn dynamodb_code(&self) -> &'static str {
         match self {
-            Terminal::GalianoIslandSturdiesBay => "gisb",
-            Terminal::MayneIslandVillageBay => "mivb",
-            Terminal::VancouverTsawwassen => "vats",
-            Terminal::PenderIslandOtterBay => "piob",
-            Terminal::SaltSpringIslandLongHarbour => "sslh",
-            Terminal::SaturnaIslandLyallHarbour => "silh",
-            Terminal::VictoriaSwartzBay => "visb",
+            TerminalCode::Plh => "sslh",
+            TerminalCode::Pob => "piob",
+            TerminalCode::Psb => "gisb",
+            TerminalCode::Pst => "silh",
+            TerminalCode::Pvb => "mivb",
+            TerminalCode::Swb => "visb",
+            TerminalCode::Tsa => "vats",
         }
     }
 }
@@ -46,15 +46,6 @@ impl StopType {
             StopType::Stop => "stop",
             StopType::Transfer => "transfer",
         }
-    }
-}
-
-impl ScheduleWeekday {
-    fn to_dynamodb(&self) -> HashMap<String, AttributeValue> {
-        HashMap::from_iter([(
-            "onlyDates".to_string(),
-            AttributeValue::L(self.only_dates.iter().map(|d| AttributeValue::S(format_iso_date(*d))).collect()),
-        )])
     }
 }
 
@@ -80,20 +71,54 @@ impl Sailing {
     }
 }
 
+impl SailingWithNotes {
+    fn to_dynamodb(&self) -> HashMap<String, AttributeValue> {
+        let mut result = self.sailing.to_dynamodb();
+        result.extend([("note".to_string(), AttributeValue::S(self.notes.join("; ")))]);
+        result
+    }
+}
+
 impl ScheduleItem {
     fn to_dynamodb(&self) -> HashMap<String, AttributeValue> {
         HashMap::from_iter([
             ("sailing".to_string(), AttributeValue::M(self.sailing.to_dynamodb())),
             (
                 "exceptDates".to_string(),
-                AttributeValue::L(self.except_dates.iter().map(|d| AttributeValue::S(format_iso_date(*d))).collect()),
+                AttributeValue::L(
+                    self.weekdays
+                        .iter()
+                        .filter_map(|(_, dr)| {
+                            if let DateRestriction::Except(except_dates) = dr {
+                                Some(except_dates.iter().map(|d| AttributeValue::S(format_iso_date(*d))))
+                            } else {
+                                None
+                            }
+                        })
+                        .flatten()
+                        .collect(),
+                ),
             ),
             (
                 "weekdays".to_string(),
                 AttributeValue::M(
                     self.weekdays
                         .iter()
-                        .map(|(w, sw)| (weekday_dynamodb_code(*w).to_string(), AttributeValue::M(sw.to_dynamodb())))
+                        .map(|(w, dr)| {
+                            (
+                                weekday_dynamodb_code(*w).to_string(),
+                                AttributeValue::M(HashMap::from_iter([(
+                                    "onlyDates".to_string(),
+                                    if let DateRestriction::Only(only_dates) = dr {
+                                        AttributeValue::L(
+                                            only_dates.iter().map(|d| AttributeValue::S(format_iso_date(*d))).collect(),
+                                        )
+                                    } else {
+                                        AttributeValue::L(vec![])
+                                    },
+                                )])),
+                            )
+                        })
                         .collect(),
                 ),
             ),
@@ -145,9 +170,16 @@ impl Schedule {
     }
 
     async fn put_dynamodb(&self, dynamodb_client: &aws_sdk_dynamodb::Client) -> Result<()> {
-        let request = dynamodb_client.put_item().table_name("ferrysched-schedules").set_item(Some(self.to_dynamodb()));
-        request.send().await?;
-        Ok(())
+        let inner = async {
+            let item = self.to_dynamodb();
+            debug!("Put schedule to DynamoDB: {:#?}", item);
+            let request = dynamodb_client.put_item().table_name("ferrysched-schedules").set_item(Some(item));
+            request.send().await?;
+            Ok(()) as Result<_>
+        };
+        inner.await.with_context(|| {
+            format!("Failed to put schedule to DynamoDB: {}, {}", self.terminal_pair, self.effective_date_range)
+        })
     }
 }
 
@@ -181,29 +213,39 @@ impl Sailings {
     }
 
     async fn put_dynamodb(&self, dynamodb_client: &aws_sdk_dynamodb::Client) -> Result<()> {
-        let request = dynamodb_client.put_item().table_name("ferrysched-sailings").set_item(Some(self.to_dynamodb()));
-        request.send().await?;
-        Ok(())
+        let inner = async {
+            let item = self.to_dynamodb();
+            debug!("Put sailing to DynamoDB: {:#?}", item);
+            let request = dynamodb_client.put_item().table_name("ferrysched-sailings").set_item(Some(item));
+            request.send().await?;
+            Ok(()) as Result<_>
+        };
+        inner
+            .await
+            .with_context(|| format!("Failed to put sailings to DynamoDB: {}, {}", self.terminal_pair, self.date))
     }
 }
-pub async fn put_dynamodb(schedules: &[Schedule]) -> Result<()> {
-    let aws_region_provider =
-        aws_config::meta::region::RegionProviderChain::default_provider().or_else(DEFAULT_DYNAMODB_AWS_REGION);
-    let aws_config = aws_config::from_env().region(aws_region_provider).load().await;
-    let dynamodb_client = aws_sdk_dynamodb::Client::new(&aws_config);
-    for schedule in schedules {
-        info!(
-            "Putting to DynamoDB: {} to {}, {} - {}",
-            schedule.terminal_pair.from.dynamodb_code(),
-            schedule.terminal_pair.to.dynamodb_code(),
-            format_iso_date(schedule.effective_date_range.from),
-            format_iso_date(schedule.effective_date_range.to)
-        );
-        schedule.put_dynamodb(&dynamodb_client).await?;
-        let sailings = Sailings::from_schedule(schedule)?;
-        for date_sailings in sailings {
-            date_sailings.put_dynamodb(&dynamodb_client).await?;
+
+pub async fn put_dynamodb(options: &Options, schedules: &[Schedule]) -> Result<()> {
+    let inner = async {
+        let aws_region_provider =
+            aws_config::meta::region::RegionProviderChain::default_provider().or_else(DEFAULT_DYNAMODB_AWS_REGION);
+        let aws_config = aws_config::from_env().region(aws_region_provider).load().await;
+        let dynamodb_client = aws_sdk_dynamodb::Client::new(&aws_config);
+        for schedule in schedules {
+            info!(
+                "Putting to DynamoDB: {}, {} to {}",
+                schedule.terminal_pair,
+                format_iso_date(schedule.effective_date_range.from),
+                format_iso_date(schedule.effective_date_range.to)
+            );
+            schedule.put_dynamodb(&dynamodb_client).await?;
+            let sailings = Sailings::from_schedule(options, schedule);
+            for date_sailings in sailings {
+                date_sailings.put_dynamodb(&dynamodb_client).await?;
+            }
         }
-    }
-    Ok(())
+        Ok(()) as Result<_>
+    };
+    inner.await.context("Failed to put to DynamoDB")
 }

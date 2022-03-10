@@ -3,14 +3,14 @@ use crate::cache::*;
 use crate::constants::*;
 use crate::depart_time_and_row_annotations::*;
 use crate::imports::*;
+use crate::macros::*;
 use crate::types::*;
 use crate::utils::*;
 use crate::weekday_dates::*;
-use ::scraper::{ElementRef, Selector};
 
 fn parse_annotations(
     depart_times_annotations_texts: Vec<String>,
-    effective_date_range: &DateRange,
+    date_range: &DateRange,
 ) -> Result<(Annotations, Vec<String>)> {
     let inner = || {
         let mut depart_times_texts = Vec::new();
@@ -22,7 +22,7 @@ fn parse_annotations(
             } else {
                 match trimed_commas.as_ref() {
                     "" => continue,
-                    text => annotations.parse([text], effective_date_range)?,
+                    text => annotations.parse([text], date_range)?,
                 }
             }
         }
@@ -65,7 +65,7 @@ fn parse_duration_and_stops(duration_stops_texts: Vec<String>) -> Result<(Durati
     inner().with_context(|| format!("Failed to parse duration and stops: {:?}", duration_stops_texts))
 }
 
-fn parse_tsawwassen_table(table_elem: ElementRef, effective_date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
+fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
     let inner = || {
         let mut last_row_weekday_dates = WeekdayDates::new();
         let mut items = Vec::new();
@@ -82,14 +82,13 @@ fn parse_tsawwassen_table(table_elem: ElementRef, effective_date_range: &DateRan
                 "Row should have five cells: {:?}",
                 cell_elems.iter().map(element_text).collect::<Vec<_>>()
             );
-            let (annotations, depart_times_texts) =
-                parse_annotations(element_texts(&cell_elems[2]), effective_date_range)?;
+            let (annotations, depart_times_texts) = parse_annotations(element_texts(&cell_elems[2]), date_range)?;
             let depart_times = parse_depart_times_and_annotations(depart_times_texts, &annotations)?;
             let day_text = element_text(&cell_elems[1]);
             let weekday_dates = if day_text.is_empty() {
                 last_row_weekday_dates
             } else {
-                WeekdayDates::parse(&day_text, &annotations, effective_date_range)?
+                WeekdayDates::parse(&day_text, &annotations, date_range)?
             };
             let (duration, stops) = parse_duration_and_stops(element_texts(&cell_elems[3]))?;
             for depart_time in depart_times {
@@ -112,49 +111,40 @@ fn parse_tsawwassen_table(table_elem: ElementRef, effective_date_range: &DateRan
     inner().context("Failed to parse Tsawwassen schedule table")
 }
 
-async fn scrape_tsawwassen_schedule(
+fn parse_date_range(text: &str) -> Result<DateRange> {
+    DateRange::parse(text, "%Y%m%d", "-")
+        .with_context(|| format!("Failed to parse schedule query date range: {:?}", text))
+}
+
+fn schedule_base_url(terminal_pair: TerminalCodePair) -> String {
+    format!("https://www.bcferries.com/routes-fares/schedules/seasonal/{}", terminal_pair.to_schedule_code_pair())
+}
+
+async fn scrape_schedule(
     options: &Options,
     cache: &Cache<'_>,
-    terminal_pair: &TerminalCodePair,
-    base_url: &str,
+    terminal_pair: TerminalCodePair,
     date_range_query_value: &str,
     today: NaiveDate,
 ) -> Result<Option<Schedule>> {
-    //TODO: parse through-fares
-    let source_url = format!("{}?departureDate={}", base_url, date_range_query_value);
+    let source_url = format!("{}?departureDate={}", schedule_base_url(terminal_pair), date_range_query_value);
     let inner = async {
-        let effective_date_range = DateRange::parse_schedule_query_value(date_range_query_value)
+        let date_range = parse_date_range(date_range_query_value)
             .with_context(|| format!("Failed to parse date range query value: {:?}", date_range_query_value))?;
-        if options.date.is_some() && !effective_date_range.date_within_inclusive(options.date.unwrap()) {
-            return Ok(None);
-        }
-        if effective_date_range.to < today {
-            debug!("Skipping outdated schedule for {}, {}", terminal_pair, effective_date_range);
+        if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
         }
         let document = cache
             .get_html(&source_url, &IGNORE_HTML_CHANGES_REGEX)
             .await
             .with_context(|| format!("Failed to download schedule HTML from: {:?}", source_url))?;
-        if !document.changed {
-            info!("Source data is unchanged for {}, {}", terminal_pair, effective_date_range);
-            return Ok(None);
-        }
-        info!("Parsing schedule for {}, {}", terminal_pair, effective_date_range);
+        info!("Parsing schedule for {}, {}", terminal_pair, date_range);
         let table_elem = document
-            .value
             .select(selector!("div.seasonalSchedulesContainer table"))
             .next()
             .ok_or(anyhow!("Missing table element in schedule"))?;
-        let items = parse_tsawwassen_table(table_elem, &effective_date_range)?;
-        Ok(Some(Schedule {
-            terminal_pair: *terminal_pair,
-            effective_date_range,
-            items,
-            source_url: source_url.to_string(),
-            route_group: RouteGroup::SaltSpringAndOuterGulfIslands,
-            reservable: true,
-        })) as Result<_>
+        let items = parse_table(table_elem, &date_range)?;
+        Ok(Some(Schedule { terminal_pair, date_range, items, source_url: source_url.to_string() })) as Result<_>
     };
     inner.await.with_context(|| {
         format!(
@@ -173,15 +163,13 @@ pub async fn scrape_tsawwassen_schedules(
     if options.terminals.is_some() && options.terminals != Some(terminal_pair) {
         return Ok(vec![]);
     }
-    let source_url =
-        format!("https://www.bcferries.com/routes-fares/schedules/seasonal/{}", terminal_pair.to_schedule_code_pair());
+    let base_url = schedule_base_url(terminal_pair);
     let inner = async {
-        let document = cache
-            .get_html(&source_url, &IGNORE_HTML_CHANGES_REGEX)
+        let base_document = cache
+            .get_html(&base_url, &IGNORE_HTML_CHANGES_REGEX)
             .await
-            .with_context(|| format!("Failed to download base schedule HTML from: {:?}", source_url))?;
-        let schedule_container_elem = document
-            .value
+            .with_context(|| format!("Failed to download base schedule HTML from: {:?}", base_url))?;
+        let schedule_container_elem = base_document
             .select(selector!("div.seasonalSchedulesContainer"))
             .next()
             .ok_or(anyhow!("Missing schedule container element"))?;
@@ -191,15 +179,13 @@ pub async fn scrape_tsawwassen_schedules(
             let date_range_option_value = date_range_option_elem.value().attr("value").ok_or_else(|| {
                 anyhow!("Missing value in date range option element: {}", date_range_option_elem.html())
             })?;
-            let opt_schedule =
-                scrape_tsawwassen_schedule(options, cache, &terminal_pair, &source_url, date_range_option_value, today)
-                    .await?;
+            let opt_schedule = scrape_schedule(options, cache, terminal_pair, date_range_option_value, today).await?;
             opt_schedule.iter().for_each(|s| debug!("Parsed schedule: {:#?}", s));
             schedules.extend(opt_schedule);
         }
         Ok(schedules) as Result<_>
     };
-    inner.await.with_context(|| {
-        format!("Failed to scrape Tsawwassen base schedule for {} from: {:?}", terminal_pair, source_url)
-    })
+    inner
+        .await
+        .with_context(|| format!("Failed to scrape Tsawwassen schedule for {} from: {:?}", terminal_pair, base_url))
 }

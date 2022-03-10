@@ -1,0 +1,19 @@
+[package]
+name = "ferrysched_shared"
+version = "0.1.0"
+authors = ["Emanuel Borsboom <emanuel@borsboom.io>"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.6"
+log = "0.4"
+once_cell = "1.9"
+serde = { version = "1.0", features = ["derive"] }
+strum = "0.24"
+strum_macros = "0.24"
+
+[features]
+wasm = ["chrono/wasmbind"]

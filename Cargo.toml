@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "frontend",
+    "scraper",
+    "shared",
+]
+
+[profile.release]
+lto = true
+# Ideally we would only specify this for the wasm target, but Cargo doesn't support that yet
+# (see https://github.com/rust-lang/cargo/issues/4897).
+opt-level = 's'

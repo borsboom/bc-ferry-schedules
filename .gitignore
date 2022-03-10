@@ -1,1 +1,5 @@
+.env
+frontend/dist/
+frontend/dist-release/
+frontend/local-data/
 target/

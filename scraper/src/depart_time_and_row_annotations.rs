@@ -1,11 +1,12 @@
 use crate::annotations::*;
 use crate::imports::*;
+use crate::macros::*;
 use crate::utils::*;
 
 pub struct DepartTimeAndRowAnnotations {
     pub time: NaiveTime,
     pub row_dates: AnnotationDates,
-    pub row_notes: HashMap<&'static str, AnnotationDates>,
+    pub row_notes: HashMap<Cow<'static, str>, AnnotationDates>,
 }
 
 impl DepartTimeAndRowAnnotations {

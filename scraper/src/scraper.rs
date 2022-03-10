@@ -6,20 +6,19 @@ use crate::imports::*;
 use crate::scraper::non_tsawwassen::*;
 use crate::scraper::tsawwassen::*;
 use crate::types::*;
-use crate::utils::*;
 
 pub async fn scrape_schedules(options: &Options, cache: &Cache<'_>) -> Result<Vec<Schedule>> {
     let inner = async {
-        let today = now_pacific().date().naive_local();
+        let today = today_pacific();
         let mut result = Vec::new();
         result.extend(scrape_non_tsawwassen_schedules(options, cache, today).await?);
         for terminal_pair in
-            [TerminalCode::Psb, TerminalCode::Pvb, TerminalCode::Pob, TerminalCode::Plh, TerminalCode::Pst]
+            [TerminalCode::PSB, TerminalCode::PVB, TerminalCode::POB, TerminalCode::PST, TerminalCode::SWB]
                 .iter()
                 .flat_map(|&t| {
                     [
-                        TerminalCodePair { from: t, to: TerminalCode::Tsa },
-                        TerminalCodePair { from: TerminalCode::Tsa, to: t },
+                        TerminalCodePair { from: t, to: TerminalCode::TSA },
+                        TerminalCodePair { from: TerminalCode::TSA, to: t },
                     ]
                 })
         {

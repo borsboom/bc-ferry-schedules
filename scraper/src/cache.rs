@@ -1,33 +1,24 @@
+use directories::ProjectDirs;
+use scraper::Html;
+
 use crate::imports::*;
-use crate::types::*;
+use crate::macros::*;
 use crate::utils::*;
-use ::directories::ProjectDirs;
-use ::scraper::Html;
-use ::std::fs;
-use ::std::path::PathBuf;
-
-static MAX_CACHE_AGE: Lazy<Duration> = Lazy::new(|| Duration::hours(12));
-
-#[derive(Debug)]
-pub struct Cached<T> {
-    pub value: T,
-    pub changed: bool,
-}
 
 #[derive(Debug)]
 pub struct Cache<'a> {
-    options: &'a Options,
+    max_cache_age: Duration,
     project_dirs: &'a ProjectDirs,
     reqwest_client: reqwest::Client,
 }
 
 impl<'a> Cache<'a> {
-    pub fn new(options: &'a Options, project_dirs: &'a ProjectDirs) -> Cache<'a> {
+    pub fn new(max_cache_age: Duration, project_dirs: &'a ProjectDirs) -> Cache<'a> {
         let reqwest_client = reqwest::Client::new();
-        Cache { options, project_dirs, reqwest_client }
+        Cache { max_cache_age, project_dirs, reqwest_client }
     }
 
-    pub async fn fetch_url<T, F>(&self, url: &str, transform: F) -> Result<Cached<T>>
+    pub async fn fetch_url<T, F>(&self, url: &str, transform: F) -> Result<T>
     where
         F: Fn(String) -> (T, String),
     {
@@ -38,12 +29,10 @@ impl<'a> Cache<'a> {
             cache_path.push(&cache_filename);
             let opt_cached_contents = if let Ok(cache_metadata) = fs::metadata(&cache_path) {
                 let (cached_value, cached_contents) = transform(fs::read_to_string(&cache_path)?);
-                if !self.options.ignore_cache {
-                    let cache_modified_time: DateTime<Utc> = cache_metadata.modified()?.into();
-                    if Utc::now() - cache_modified_time < *MAX_CACHE_AGE {
-                        info!("Using cached: {:?}", cache_path);
-                        return Ok(Cached { value: cached_value, changed: self.options.force });
-                    }
+                let cache_modified_time: DateTime<Utc> = cache_metadata.modified()?.into();
+                if Utc::now() - cache_modified_time < self.max_cache_age {
+                    info!("Using cached: {:?}", cache_path);
+                    return Ok(cached_value);
                 }
                 Some(cached_contents)
             } else {
@@ -60,15 +49,13 @@ impl<'a> Cache<'a> {
                 fs::create_dir_all(&cache_path)?;
                 cache_path.push(format!("{}_{}", cache_filename, now_pacific().format("%Y%m%d%H%M%S")));
                 fs::write(&cache_path, &new_contents)?;
-                Ok(Cached { value: new_value, changed: true })
-            } else {
-                Ok(Cached { value: new_value, changed: self.options.force }) as Result<_>
             }
+            Ok(new_value) as Result<_>
         };
         inner.await.with_context(|| format!("Failed to fetch URL with cache: {:?}", url))
     }
 
-    pub async fn get_html(&self, url: &str, ignore_changes_regex: &Regex) -> Result<Cached<Html>> {
+    pub async fn get_html(&self, url: &str, ignore_changes_regex: &Regex) -> Result<Html> {
         let transform_html = |orig_contents: String| {
             let contents = ignore_changes_regex.replace(&orig_contents, "").to_string();
             (Html::parse_document(&contents), contents)

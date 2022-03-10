@@ -1,0 +1,16 @@
+[package]
+name = "ferrysched_frontend"
+version = "0.1.0"
+authors = ["Emanuel Borsboom <emanuel@borsboom.io>"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[dependencies]
+ferrysched_shared = { path = "../shared", features = ["wasm"] }
+reqwasm = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+wasm-bindgen-futures = "0.4"
+wasm-logger = "0.2"
+web-sys = "0.3"
+yew = "0.19"
+yew-router = "0.16"

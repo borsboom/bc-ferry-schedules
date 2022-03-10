@@ -1,24 +1,22 @@
 [package]
 name = "ferrysched_scraper"
 version = "0.1.0"
+authors = ["Emanuel Borsboom <emanuel@borsboom.io>"]
+license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0"
-aws-config = "0.6"
-aws-sdk-dynamodb = "0.6"
-chrono = "0.4"
-chrono-tz = "0.6"
+aws-config = "0.8"
+aws-sdk-cloudfront = "0.8"
+aws-sdk-s3 = "0.8"
 clap = { version = "3.0", features = ["derive", "env"] }
 directories = "4.0"
 dotenv = "0.15"
 env_logger = "0.9"
-log = "0.4"
-once_cell = "1.9"
-scraper = "0.12"
-selectors = "0.22"
-strum = "0.23"
-strum_macros = "0.23"
-tokio = { version = "1.16", features = ["full"] }
+ferrysched_shared = { path = "../shared" }
 regex = "1.5"
 reqwest = "0.11"
+scraper = "0.12"
+selectors = "0.22"
+serde_json = "1.0"
+tokio = { version = "1.16", features = ["full"] }

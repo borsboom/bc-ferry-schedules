@@ -1,6 +1,5 @@
 use crate::annotations::*;
 use crate::imports::*;
-use crate::types::*;
 
 #[derive(Debug)]
 pub struct WeekdayDates {
@@ -39,10 +38,10 @@ impl WeekdayDates {
         self.day_mut(date.weekday()).only.insert(date);
     }
 
-    pub fn parse(orig_text: &str, annotations: &Annotations, effective_date_range: &DateRange) -> Result<WeekdayDates> {
+    pub fn parse(orig_text: &str, annotations: &Annotations, date_range: &DateRange) -> Result<WeekdayDates> {
         let inner = || {
             let mut result = WeekdayDates::new();
-            let from_year = effective_date_range.from.year();
+            let from_year = date_range.from.year();
             let normalized_text = match orig_text {
                 "Sun & Hol Mon" => "Sun, Hol Mon",
                 "Fri & Apr 14 only" => "Fri, Apr 14",
@@ -60,7 +59,7 @@ impl WeekdayDates {
             for split_text in normalized_text.split(',').map(|s| s.trim().to_lowercase()) {
                 if let Ok(parsed_date) = NaiveDate::parse_from_str(&format!("{} {}", split_text, from_year), "%b %e %Y")
                 {
-                    result.only_date(effective_date_range.make_year_within(parsed_date)?);
+                    result.only_date(date_range.make_year_within(parsed_date)?);
                     continue;
                 }
                 match &split_text[..] {

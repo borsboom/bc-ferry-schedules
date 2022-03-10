@@ -3,16 +3,12 @@ use crate::cache::*;
 use crate::constants::*;
 use crate::depart_time_and_row_annotations::*;
 use crate::imports::*;
+use crate::macros::*;
 use crate::types::*;
 use crate::utils::*;
 use crate::weekday_dates::*;
-use ::scraper::{ElementRef, Selector};
-use ::selectors::Element;
 
-fn parse_annotations(
-    table_elem: &ElementRef,
-    effective_date_range: &DateRange,
-) -> Result<(Annotations, Vec<Vec<String>>)> {
+fn parse_annotations(table_elem: &ElementRef, date_range: &DateRange) -> Result<(Annotations, Vec<Vec<String>>)> {
     let inner = || {
         let mut annotations = Annotations::new();
         let mut item_rows = Vec::new();
@@ -22,7 +18,7 @@ fn parse_annotations(
                 item_rows.push(cell_elems.iter().map(element_text).collect());
             } else if cell_elems.len() == 1 || (cell_elems.len() == 2 && element_text(&cell_elems[1]).is_empty()) {
                 let annotation_texts = element_texts(&cell_elems[0]);
-                annotations.parse(annotation_texts, effective_date_range)?;
+                annotations.parse(annotation_texts, date_range)?;
             } else {
                 bail!(
                     "Expect schedule row to have either 1 or 4 cells; found {:?} in: {}",
@@ -39,14 +35,14 @@ fn parse_annotations(
 fn parse_items(
     item_rows: Vec<Vec<String>>,
     annotations: &Annotations,
-    effective_date_range: &DateRange,
+    date_range: &DateRange,
 ) -> Result<Vec<ScheduleItem>> {
     let mut items = Vec::new();
     for cell_texts in item_rows {
         let mut inner = || {
             let DepartTimeAndRowAnnotations { time: depart_time, row_dates, row_notes } =
                 DepartTimeAndRowAnnotations::parse(&cell_texts[0], annotations)?;
-            let weekday_dates = WeekdayDates::parse(&cell_texts[1], annotations, effective_date_range)?;
+            let weekday_dates = WeekdayDates::parse(&cell_texts[1], annotations, date_range)?;
             let weekdays = weekday_dates.to_date_restrictions(&row_dates);
             let stops_text = &cell_texts[2];
             let stops = parse_schedule_stops(stops_text.split(','))
@@ -64,6 +60,11 @@ fn parse_items(
     Ok(items)
 }
 
+fn parse_date_range(text: &str) -> Result<DateRange> {
+    DateRange::parse(text, "%B %e, %Y", " - ")
+        .with_context(|| format!("Failed to parse schedule HTML date range: {:?}", text))
+}
+
 fn parse_schedule(
     options: &Options,
     terminal_pair: TerminalCodePair,
@@ -73,16 +74,12 @@ fn parse_schedule(
 ) -> Result<Option<Schedule>> {
     let date_range_text = element_text(date_range_elem);
     let inner = || {
-        let effective_date_range = DateRange::parse_schedule_html_text(&date_range_text)
-            .with_context(|| format!("Failed to parse effective date range: {:?}", date_range_text))?;
-        if options.date.is_some() && !effective_date_range.date_within_inclusive(options.date.unwrap()) {
+        let date_range = parse_date_range(&date_range_text)
+            .with_context(|| format!("Failed to parse date range: {:?}", date_range_text))?;
+        if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
         }
-        if effective_date_range.to < today {
-            debug!("Skipping outdated schedule for {}, {}", terminal_pair, effective_date_range);
-            return Ok(None);
-        }
-        info!("Parsing schedule for {}, {}", terminal_pair, effective_date_range);
+        info!("Parsing schedule for {}, {}", terminal_pair, date_range);
         let table_container_elem = date_range_elem
             .parent_element()
             .unwrap()
@@ -93,15 +90,13 @@ fn parse_schedule(
             if table_elems.next().is_some() {
                 bail!("Expect zero or one tables in schedule table container element");
             }
-            let (annotations, item_rows) = parse_annotations(&table_elem, &effective_date_range)?;
-            let items = parse_items(item_rows, &annotations, &effective_date_range)?;
+            let (annotations, item_rows) = parse_annotations(&table_elem, &date_range)?;
+            let items = parse_items(item_rows, &annotations, &date_range)?;
             Ok(Some(Schedule {
                 terminal_pair,
-                effective_date_range,
+                date_range,
                 items,
                 source_url: format!("{}#{}", source_url, terminal_pair.from),
-                route_group: RouteGroup::SaltSpringAndOuterGulfIslands,
-                reservable: false,
             }))
         } else {
             Ok(None)
@@ -121,12 +116,8 @@ pub async fn scrape_non_tsawwassen_schedules(
             .get_html(SOURCE_URL, &IGNORE_HTML_CHANGES_REGEX)
             .await
             .with_context(|| format!("Failed to download schedule HTML from: {:?}", SOURCE_URL))?;
-        if !document.changed {
-            info!("Source data is unchanged for non-Tsawwassen");
-            return Ok(vec![]);
-        }
         let mut schedules = Vec::new();
-        for terminal_pair_description_elem in document.value.select(selector!("div.js-accordion > h4")) {
+        for terminal_pair_description_elem in document.select(selector!("div.js-accordion > h4")) {
             let terminal_pair_id = terminal_pair_description_elem.value().id().ok_or_else(|| {
                 anyhow!("Terminal pair element missing ID: {}", terminal_pair_description_elem.html())
             })?;

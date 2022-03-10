@@ -1,6 +1,5 @@
 use crate::imports::*;
-use crate::types::*;
-use crate::utils::*;
+use crate::macros::*;
 
 #[derive(Clone, Debug)]
 pub struct AnnotationDates {
@@ -16,19 +15,19 @@ pub struct Annotations {
     pub star_by_time: HashMap<NaiveTime, AnnotationDates>,
     pub starstar: AnnotationDates,
     pub exclamation: AnnotationDates,
-    pub exclamation_text: HashMap<&'static str, AnnotationDates>,
-    pub exclamationexclamation_text: HashMap<&'static str, AnnotationDates>,
+    pub exclamation_text: HashMap<Cow<'static, str>, AnnotationDates>,
+    pub exclamationexclamation_text: HashMap<Cow<'static, str>, AnnotationDates>,
     pub hash: AnnotationDates,
-    pub hash_text: HashMap<&'static str, AnnotationDates>,
+    pub hash_text: HashMap<Cow<'static, str>, AnnotationDates>,
     pub plus: AnnotationDates,
-    pub plus_text: HashMap<&'static str, AnnotationDates>,
+    pub plus_text: HashMap<Cow<'static, str>, AnnotationDates>,
 }
 
-fn text_date_restriction<'a>(
-    map: &'a mut HashMap<&'static str, AnnotationDates>,
-    text: &'static str,
+fn text_date_restriction<'a, T: Into<Cow<'static, str>>>(
+    map: &'a mut HashMap<Cow<'static, str>, AnnotationDates>,
+    text: T,
 ) -> &'a mut AnnotationDates {
-    map.entry(text).or_insert_with(AnnotationDates::new)
+    map.entry(text.into()).or_insert_with(AnnotationDates::new)
 }
 
 impl AnnotationDates {
@@ -53,8 +52,10 @@ impl AnnotationDates {
         }
         if !self.only.is_empty() {
             DateRestriction::Only(self.only)
-        } else {
+        } else if !self.except.is_empty() {
             DateRestriction::Except(self.except)
+        } else {
+            DateRestriction::All
         }
     }
 
@@ -84,11 +85,7 @@ impl AnnotationDates {
         map.into_iter()
             .filter_map(|(k, ad)| {
                 let dr = ad.into_date_restriction_by_weekdays(weekdays);
-                if dr.is_never() {
-                    None
-                } else {
-                    Some((k, dr))
-                }
+                (!dr.is_never()).then(|| (k, dr))
             })
             .collect()
     }
@@ -114,12 +111,12 @@ impl Annotations {
     pub fn parse<T: AsRef<str>, I: IntoIterator<Item = T>>(
         &mut self,
         annotation_texts: I,
-        effective_date_range: &DateRange,
+        date_range: &DateRange,
     ) -> Result<()> {
+        let from_year = date_range.from.year();
+        let to_year = date_range.to.year();
         let schedule_year_date = |m, d| {
-            effective_date_range
-                .make_year_within(date(effective_date_range.from.year(), m, d))
-                .context("Invalid date for schedule in annotation")
+            date_range.make_year_within(date(from_year, m, d)).context("Invalid date for schedule in annotation")
         };
         let mut annotation_is_exclamation = false;
         for annotation_text in annotation_texts {
@@ -138,16 +135,11 @@ impl Annotations {
                         other => bail!("Expected \"Only\" or \"Not Available\" in: {:?}", other),
                     };
                     for date_text in captures[3].split(',').map(|s| s.trim()) {
-                        let parsed_date = NaiveDate::parse_from_str(
-                            &format!("{} {}", date_text, effective_date_range.from.year()),
-                            "%e %b %Y",
-                        )
-                        .with_context(|| format!("Failed to parse date: {:?}", date_text))?;
-                        let date = effective_date_range.make_year_within(parsed_date).with_context(|| {
-                            format!(
-                                "Date is outside effective date range of schedule ({}): {:?}",
-                                effective_date_range, parsed_date
-                            )
+                        let parsed_date =
+                            NaiveDate::parse_from_str(&format!("{} {}", date_text, from_year), "%e %b %Y")
+                                .with_context(|| format!("Failed to parse date: {:?}", date_text))?;
+                        let date = date_range.make_year_within(parsed_date).with_context(|| {
+                            format!("Date is outside date range of schedule ({}): {:?}", date_range, parsed_date)
                         })?;
                         dates_hashset.insert(date);
                     }
@@ -303,6 +295,11 @@ impl Annotations {
                                     from: schedule_year_date(2, 14)?,
                                     to: schedule_year_date(3, 28)?,
                                 }.iter_days()),
+                        "+ Foot passengers only through March 28." if to_year == 2022 =>
+                            text_date_restriction(&mut self.plus_text, "Foot passengers only").only.extend(DateRange {
+                                from: schedule_year_date(2, 14)?,
+                                to: schedule_year_date(3, 28)?,
+                            }.iter_days()),
                         "# Foot passengers only on this sailing." => {
                             text_date_restriction(&mut self.hash_text, "Foot passengers only");
                         }

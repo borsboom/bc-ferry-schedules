@@ -108,6 +108,11 @@ impl Annotations {
         }
     }
 
+    fn star_holiday_monday_extend(&mut self, dates: &[NaiveDate]) {
+        self.holiday_monday.only.extend(dates);
+        self.star.except.extend(dates);
+    }
+
     pub fn parse<T: AsRef<str>, I: IntoIterator<Item = T>>(
         &mut self,
         annotation_texts: I,
@@ -149,25 +154,19 @@ impl Annotations {
                     // TODO: reduce repetition
                     match annotation_text {
                         "!" => next_annotation_is_exclamation = true,
-                        "* On December 27, 2021, January 3 & February 21, 2022 the Holiday Monday schedule is in effect." | "* On December 27, 2021, January 3 and February 21, 2022 the Holiday Monday schedule is in effect." => {
-                            let dates = [
+                        "* On December 27, 2021, January 3 & February 21, 2022 the Holiday Monday schedule is in effect." | "* On December 27, 2021, January 3 and February 21, 2022 the Holiday Monday schedule is in effect." =>
+                            self.star_holiday_monday_extend(&[
                                 date(2021, 12, 27),
                                 date(2022, 1, 3),
                                 date(2022, 2, 21),
-                            ];
-                            self.holiday_monday.only.extend(dates);
-                            self.star.except.extend(dates);
-                        }
-                        "* On December 27, 2021, January 3, February 21 & April 18, 2022 the Holiday Monday schedule is in effect." => {
-                            let dates = [
+                            ]),
+                        "* On December 27, 2021, January 3, February 21 & April 18, 2022 the Holiday Monday schedule is in effect." =>
+                            self.star_holiday_monday_extend(&[
                                 date(2021, 12, 27),
                                 date(2022, 1, 3),
                                 date(2022, 2, 21),
                                 date(2022, 4, 18),
-                            ];
-                            self.holiday_monday.only.extend(dates);
-                            self.star.except.extend(dates);
-                        }
+                            ]),
                         "** Except on December 25, 2021 & January 1, 2022." =>
                             self.starstar.except.extend([
                                 date(2021, 12, 25),
@@ -179,36 +178,28 @@ impl Annotations {
                                 date(2022, 1, 3),
                                 date(2022, 2, 21),
                             ]),
-                        "* Except on April 14th" => {
-                            self.star.except.extend([schedule_year_date(4, 14)?]);
-                        }
-                        "** Except on April 14th" => {
-                            self.starstar.except.extend([schedule_year_date(4, 14)?]);
-                        }
-                        "* Except on April 18th" => {
-                            self.star.except.extend([schedule_year_date(4, 18)?]);
-                        }
-                        "** Only on April 14th" => {
-                            self.starstar.only.extend([schedule_year_date(4, 14)?]);
-                        }
-                        "* Only on April 14th" => {
-                            self.star.only.extend([schedule_year_date(4, 14)?]);
-                        }
-                        "On April 18th the Holiday Monday schedule is in effect." if annotation_is_exclamation => {
-                            let dates = [schedule_year_date(4, 18)?];
-                            self.holiday_monday.only.extend(dates);
-                            self.exclamation.except.extend(dates);
-                        }
-                        "* On April 18th the Holiday Monday schedule is in effect." => {
-                            let dates = [schedule_year_date(4, 18)?];
-                            self.holiday_monday.only.extend(dates);
-                            self.star.except.extend(dates);
-                        }
-                        "* On May 23rd the Holiday Monday schedule is in effect." => {
-                            let dates = [schedule_year_date(5, 23)?];
-                            self.holiday_monday.only.extend(dates);
-                            self.star.except.extend(dates);
-                        }
+                        "* Except on April 14th" =>
+                            self.star.except.extend([schedule_year_date(4, 14)?]),
+                        "** Except on April 14th" =>
+                            self.starstar.except.extend([schedule_year_date(4, 14)?]),
+                        "* Except on April 18th" =>
+                            self.star.except.extend([schedule_year_date(4, 18)?]),
+                        "** Only on April 14th" =>
+                            self.starstar.only.extend([schedule_year_date(4, 14)?]),
+                        "* Only on April 14th" =>
+                            self.star.only.extend([schedule_year_date(4, 14)?]),
+                        "On April 18th the Holiday Monday schedule is in effect." if annotation_is_exclamation =>
+                            self.star_holiday_monday_extend(&[schedule_year_date(4, 18)?]),
+                        "* On April 18th the Holiday Monday schedule is in effect." =>
+                            self.star_holiday_monday_extend(&[schedule_year_date(4, 18)?]),
+                        "* On May 23rd the Holiday Monday schedule is in effect." =>
+                            self.star_holiday_monday_extend(&[schedule_year_date(5, 23)?]),
+                        "* On August 1st and September 5th 2022, the Holiday Monday schedule is in effect." =>
+                            self.star_holiday_monday_extend(&[date(2022, 8, 1), date(2022, 9, 5)]),
+                        "* On October 10, 2022, the Holiday Monday Schedule is in effect." =>
+                            self.star_holiday_monday_extend(&[date(2022, 10, 10)]),
+                        "* On December 26, 2022, January 2 & February 20, 2023 the Holiday Monday schedule is in effect." =>
+                            self.star_holiday_monday_extend(&[date(2022, 12, 26), date(2023, 1, 2), date(2023, 2, 20)]),
                         "** Except February 14 to March 28, 2022." =>
                             self.starstar.except.extend(
                                 DateRange {
@@ -285,7 +276,6 @@ impl Annotations {
                                 schedule_year_date(6, 26)?,
                             ]),
                         "# Foot passengers only on this sailing - Vehicles permitted February 14 to March 28, 2022." =>
-                            //TODO: Update the front-end to display text annotations
                             text_date_restriction(&mut self.hash_text, "Foot passengers only").except.extend(DateRange {
                                 from: schedule_year_date(2, 14)?,
                                 to: schedule_year_date(3, 28)?,

@@ -4,7 +4,7 @@ use crate::imports::*;
 
 #[derive(Args, Debug)]
 pub struct Options {
-    /// Maximum time to cache source schedule
+    /// Maximum time to cache source schedule HTML
     #[clap(short = 'a', long, value_name = "HOURS", default_value = "12")]
     pub max_cache_age: i64,
 

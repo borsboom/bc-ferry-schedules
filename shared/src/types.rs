@@ -235,11 +235,11 @@ impl DateRestriction {
     }
     pub fn merge(&mut self, other: &DateRestriction) -> Result<()> {
         match (self, other) {
-            (DateRestriction::Except(self_except), DateRestriction::Except(other_except)) => {
-                self_except.extend(other_except)
-            }
-            (DateRestriction::Only(self_only), DateRestriction::Only(other_only)) => self_only.extend(other_only),
+            (DateRestriction::Except(a), DateRestriction::Except(b)) => a.extend(b),
+            (DateRestriction::Only(a), DateRestriction::Only(b)) => a.extend(b),
             (DateRestriction::All, DateRestriction::All) => {}
+            (a @ DateRestriction::All, DateRestriction::Except(b)) => *a = DateRestriction::Except(b.clone()),
+            (DateRestriction::Except(_), DateRestriction::All) => {}
             (a, b) => bail!("Conflict in date restrictions to merge: {:?} and {:?}", a, b),
         }
         Ok(())

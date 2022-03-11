@@ -54,6 +54,7 @@ impl WeekdayDates {
                 "Sat, Sun & Hol Mon" => "Sat, Sun, Hol Mon",
                 "Dec 26 & 27 only" => "Dec 26, Dec 27",
                 "Fri-Sun, Hol Mon & Apr 14 only" => "Fri-Sun, Hol Mon, Apr 14",
+                "Dec 22, 27" => "Dec 22, Dec 27",
                 text => text,
             };
             for split_text in normalized_text.split(',').map(|s| s.trim().to_lowercase()) {
@@ -91,6 +92,10 @@ impl WeekdayDates {
                     "mon*-thu" => {
                         result.day_restriction(Weekday::Mon, &annotations.star);
                         result.days([Weekday::Tue, Weekday::Wed, Weekday::Thu]);
+                    }
+                    "mon*-wed" => {
+                        result.day_restriction(Weekday::Mon, &annotations.star);
+                        result.days([Weekday::Tue, Weekday::Wed]);
                     }
                     "mon-thu**" => {
                         result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed]);

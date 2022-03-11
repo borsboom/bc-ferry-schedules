@@ -1,3 +1,4 @@
+.git
 Dockerfile
 Justfile
 # CONTENTS BELOW THIS LINE ARE COPIED FROM .GITIGNORE BY 'just docker-build'

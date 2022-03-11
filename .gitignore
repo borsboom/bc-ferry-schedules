@@ -1,5 +1,6 @@
 .env
-frontend/dist/
+Cargo.lock
 frontend/dist-release/
+frontend/dist/
 frontend/local-data/
 target/

@@ -2,7 +2,6 @@ set dotenv-load
 set positional-arguments
 
 local_schedules_file := "frontend/local-data/v1/schedules.json"
-docker_tag := `date +%Y%m%d.%H%M%S`
 export AWS_PAGER := ""
 
 default:
@@ -10,8 +9,8 @@ default:
 
 check:
     cargo test
-    cargo fmt -- --check
     cargo clippy -- -D warnings
+    cargo fmt -- --check
     fix="$(git grep -I -i '@[@]@\|%[%]%\|F[I]XME')"; test "$fix" = "" || (echo "\nFIX COMMENTS:\n$fix\n" >&2; false)
     dirty="$(git status . --short)"; test "$dirty" = "" || (echo "\nDIRTY FILES:\n$dirty\n" >&2; false)
     @echo "\nChecks passed."
@@ -29,7 +28,7 @@ local-data *args:
 
 upload-frontend:
     cd frontend && trunk build --release --dist dist-release
-    # Work around for the fact that CloudFront does not support auto-compressing wasm files
+    @# Work around for the fact that CloudFront does not support auto-compressing wasm files
     wasm="$(ls frontend/dist-release/*.wasm)"; gzip "$wasm" && mv "$wasm.gz" "$wasm"
     aws s3 sync frontend/dist-release/ "s3://$S3_BUCKET/" --acl public-read --delete --exclude "v1/*" --exclude "*.wasm" --exclude "*.html" --cache-control max-age=7776000,public
     aws s3 sync frontend/dist-release/ "s3://$S3_BUCKET/" --acl public-read --delete --exclude "*" --include "*.wasm" --cache-control max-age=7776000,public --content-encoding gzip --content-type application/wasm
@@ -47,13 +46,11 @@ docker-build:
     sed '/^# CONTENTS BELOW THIS LINE/q' .dockerignore >.dockerignore.new
     cat .gitignore >>.dockerignore.new
     mv .dockerignore.new .dockerignore
-    docker build --target scraper -t local/bc-ferry-schedules-scraper .
+    docker build -t local/bc-ferry-schedules .
 
-docker-push: docker-build
-    docker tag local/bc-ferry-schedules-scraper "$DOCKER_REPO:latest"
-    docker tag local/bc-ferry-schedules-scraper "$DOCKER_REPO:{{docker_tag}}"
-    docker push "$DOCKER_REPO:latest"
-    docker push "$DOCKER_REPO:{{docker_tag}}"
+docker-push tag="latest": docker-build
+    docker tag local/bc-ferry-schedules "$DOCKER_REPO:{{tag}}"
+    docker push "$DOCKER_REPO:{{tag}}"
 
 clean:
     rm -rf frontend/dist/ frontend/dist-release/ frontend/local-data/ target/

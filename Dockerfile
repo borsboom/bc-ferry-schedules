@@ -1,4 +1,4 @@
-FROM rust:1.59-bullseye as builder
+FROM rust:1-bullseye as builder
 WORKDIR /build
 COPY . .
 RUN cargo install --path scraper

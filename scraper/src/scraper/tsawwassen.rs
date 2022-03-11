@@ -142,7 +142,7 @@ async fn scrape_schedule(
         let table_elem = document
             .select(selector!("div.seasonalSchedulesContainer table"))
             .next()
-            .ok_or(anyhow!("Missing table element in schedule"))?;
+            .ok_or_else(|| anyhow!("Missing table element in schedule"))?;
         let items = parse_table(table_elem, &date_range)?;
         Ok(Some(Schedule { terminal_pair, date_range, items, source_url: source_url.to_string() })) as Result<_>
     };
@@ -172,7 +172,7 @@ pub async fn scrape_tsawwassen_schedules(
         let schedule_container_elem = base_document
             .select(selector!("div.seasonalSchedulesContainer"))
             .next()
-            .ok_or(anyhow!("Missing schedule container element"))?;
+            .ok_or_else(|| anyhow!("Missing schedule container element"))?;
         let date_range_option_elems = schedule_container_elem.select(selector!("select#seasonalScheduleDate option"));
         let mut schedules = Vec::new();
         for date_range_option_elem in date_range_option_elems {

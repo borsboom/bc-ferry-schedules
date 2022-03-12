@@ -53,4 +53,4 @@ docker-push tag="latest": docker-build
     docker push "$DOCKER_REPO:{{tag}}"
 
 clean:
-    rm -rf frontend/dist/ frontend/dist-release/ frontend/local-data/ target/
+    rm -rf Cargo.lock frontend/dist/ frontend/dist-release/ frontend/local-data/ target/

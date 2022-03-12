@@ -86,7 +86,9 @@ impl WeekdayDates {
                         Weekday::Fri,
                         Weekday::Sat,
                     ]),
+                    "thu-sat" => result.days([Weekday::Thu, Weekday::Fri, Weekday::Sat]),
                     "fri-sun" => result.days([Weekday::Fri, Weekday::Sat, Weekday::Sun]),
+                    "thu**" => result.day_restriction(Weekday::Thu, &annotations.starstar),
                     "sat**" => result.day_restriction(Weekday::Sat, &annotations.starstar),
                     "sun**" => result.day_restriction(Weekday::Sun, &annotations.starstar),
                     "mon*-thu" => {
@@ -100,6 +102,10 @@ impl WeekdayDates {
                     "mon-thu**" => {
                         result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed]);
                         result.day_restriction(Weekday::Thu, &annotations.starstar);
+                    }
+                    "mon-thu*" => {
+                        result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed]);
+                        result.day_restriction(Weekday::Thu, &annotations.star);
                     }
                     "mon*-thu**" => {
                         result.day_restriction(Weekday::Mon, &annotations.star);

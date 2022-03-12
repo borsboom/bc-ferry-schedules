@@ -178,6 +178,21 @@ impl Annotations {
                                 date(2022, 1, 3),
                                 date(2022, 2, 21),
                             ]),
+                        "* Except On December 26, 2022, January 2 & February 20, 2023." =>
+                            self.star.except.extend([
+                                date(2022, 12, 26),
+                                date(2023, 1, 2),
+                                date(2023, 2, 20),
+                            ]),
+                        "* Except on August 1st and September 5th 2022." | "* Except on August 1st and September 5th 2022," =>
+                            self.star.except.extend([
+                                date(2022, 8, 1),
+                                date(2022, 9, 5),
+                            ]),
+                        "* Except on October 10, 2022." =>
+                            self.star.except.extend([
+                                date(2022, 10, 10),
+                            ]),
                         "* Except on April 14th" =>
                             self.star.except.extend([schedule_year_date(4, 14)?]),
                         "** Except on April 14th" =>
@@ -186,6 +201,8 @@ impl Annotations {
                             self.star.except.extend([schedule_year_date(4, 18)?]),
                         "** Only on April 14th" =>
                             self.starstar.only.extend([schedule_year_date(4, 14)?]),
+                        "** Only on December 23 and December 30" =>
+                            self.starstar.only.extend([schedule_year_date(12, 23)?, schedule_year_date(12, 30)?]),
                         "* Only on April 14th" =>
                             self.star.only.extend([schedule_year_date(4, 14)?]),
                         "On April 18th the Holiday Monday schedule is in effect." if annotation_is_exclamation =>
@@ -204,37 +221,67 @@ impl Annotations {
                             self.starstar.except.extend(
                                 DateRange {
                                     from: date(2022, 2, 14),
-                                    to: date(2022, 3, 28)
+                                    to: date(2022, 3, 28),
                                 }.iter_days()),
                         "! Except February 14 to March 28, 2022." =>
                             self.exclamation.except.extend(
                                 DateRange {
                                     from: date(2022, 2, 14),
-                                    to: date(2022, 3, 28)
+                                    to: date(2022, 3, 28),
+                                }.iter_days()),
+                        "! Except February 14 to March 16, 2022." =>
+                            self.exclamation.except.extend(
+                                DateRange {
+                                    from: date(2022, 2, 14),
+                                    to: date(2022, 3, 16),
                                 }.iter_days()),
                         "# Except February 14-March 28, 2022" =>
                             self.hash.except.extend(
                                 DateRange {
                                     from: date(2022, 2, 14),
-                                    to: date(2022, 3, 28)
+                                    to: date(2022, 3, 28),
+                                }.iter_days()),
+                        "# Except February 14-March 16, 2022" =>
+                            self.hash.except.extend(
+                                DateRange {
+                                    from: date(2022, 2, 14),
+                                    to: date(2022, 3, 16),
                                 }.iter_days()),
                         "** February 14-March 28, 2022 only" =>
                             self.starstar.only.extend(
                                 DateRange {
                                     from: date(2022, 2, 14),
-                                    to: date(2022, 3, 28)
+                                    to: date(2022, 3, 28),
+                                }.iter_days()),
+                        "** February 14-March 16, 2022 only" =>
+                            self.starstar.only.extend(
+                                DateRange {
+                                    from: date(2022, 2, 14),
+                                    to: date(2022, 3, 16),
                                 }.iter_days()),
                         "# February 14 to March 28, 2022 only." =>
                             self.hash.only.extend(
                                 DateRange {
                                     from: date(2022, 2, 14),
-                                    to: date(2022, 3, 28)
+                                    to: date(2022, 3, 28),
+                                }.iter_days()),
+                        "# February 14 to March 16, 2022 only." =>
+                            self.hash.only.extend(
+                                DateRange {
+                                    from: date(2022, 2, 14),
+                                    to: date(2022, 3, 16),
                                 }.iter_days()),
                         "+ February 14 to March 28, 2022 only." =>
                             self.plus.only.extend(
                                 DateRange {
                                     from: date(2022, 2, 14),
-                                    to: date(2022, 3, 28)
+                                    to: date(2022, 3, 28),
+                                }.iter_days()),
+                        "+ February 14 to March 16, 2022 only." =>
+                            self.plus.only.extend(
+                                DateRange {
+                                    from: date(2022, 2, 14),
+                                    to: date(2022, 3, 16),
                                 }.iter_days()),
                         "# Only on February 18, 25, March 4, 11, 18, 25, 2022." | "# Only on February 18, 25, March 4, 11, 18 and 25, 2022." | "# February 18, 25, March 4, 11, 18 and 25, 2022 only." =>
                             self.hash.only.extend([
@@ -243,7 +290,14 @@ impl Annotations {
                                 date(2022, 3, 4),
                                 date(2022, 3, 11),
                                 date(2022, 3, 18),
-                                date(2022, 3, 25)
+                                date(2022, 3, 25),
+                            ]),
+                        "# Only on February 18, 25, March 4, 11, 2022." | "# February 18, 25, March 4, 11, 2022 only." =>
+                            self.hash.only.extend([
+                                date(2022, 2, 18),
+                                date(2022, 2, 25),
+                                date(2022, 3, 4),
+                                date(2022, 3, 11),
                             ]),
                         "** Except February 18, 25, March 4, 11, 18 and 25, 2022." | "** Except on February 18, 25, March 4, 11, 18 and 25, 2022." =>
                             self.starstar.except.extend([
@@ -252,8 +306,20 @@ impl Annotations {
                                 date(2022, 3, 4),
                                 date(2022, 3, 11),
                                 date(2022, 3, 18),
-                                date(2022, 3, 25)
+                                date(2022, 3, 25),
                             ]),
+                        "** Except February 18, 25, March 4, 11, 2022." | "** Except on February 18, 25, March 4, 11, 2022." =>
+                            self.starstar.except.extend([
+                                date(2022, 2, 18),
+                                date(2022, 2, 25),
+                                date(2022, 3, 4),
+                                date(2022, 3, 11),
+                            ]),
+                        "** Except February 14 to March 16, 2022." =>
+                            self.starstar.except.extend(DateRange {
+                                from: date(2022, 2, 14),
+                                to: date(2022, 3, 16)
+                            }.iter_days()),
                         "** Except May 8, 22 & June 5, 19" =>
                             self.starstar.except.extend([
                                 schedule_year_date(5, 8)?,
@@ -280,15 +346,30 @@ impl Annotations {
                                 from: schedule_year_date(2, 14)?,
                                 to: schedule_year_date(3, 28)?,
                             }.iter_days()),
+                        "# Foot passengers only on this sailing - Vehicles permitted February 14 to March 16, 2022." =>
+                            text_date_restriction(&mut self.hash_text, "Foot passengers only").except.extend(DateRange {
+                                from: schedule_year_date(2, 14)?,
+                                to: schedule_year_date(3, 16)?,
+                            }.iter_days()),
                         "# Foot passengers only February 14 to March 28." =>
                             text_date_restriction(&mut self.hash_text, "Foot passengers only").only.extend(DateRange {
                                     from: schedule_year_date(2, 14)?,
                                     to: schedule_year_date(3, 28)?,
                                 }.iter_days()),
+                        "# Foot passengers only February 14 to March 16." =>
+                            text_date_restriction(&mut self.hash_text, "Foot passengers only").only.extend(DateRange {
+                                    from: schedule_year_date(2, 14)?,
+                                    to: schedule_year_date(3, 16)?,
+                                }.iter_days()),
                         "+ Foot passengers only through March 28." if to_year == 2022 =>
                             text_date_restriction(&mut self.plus_text, "Foot passengers only").only.extend(DateRange {
-                                from: schedule_year_date(2, 14)?,
-                                to: schedule_year_date(3, 28)?,
+                                from: date(2022, 2, 14),
+                                to: date(2022, 3, 28),
+                            }.iter_days()),
+                        "+ Foot passengers only through March 16." if to_year == 2022 =>
+                            text_date_restriction(&mut self.plus_text, "Foot passengers only").only.extend(DateRange {
+                                from: date(2022, 2, 14),
+                                to: date(2022, 3, 16),
                             }.iter_days()),
                         "# Foot passengers only on this sailing." => {
                             text_date_restriction(&mut self.hash_text, "Foot passengers only");
@@ -313,6 +394,14 @@ impl Annotations {
                                 schedule_year_date(3, 11)?,
                                 schedule_year_date(3, 18)?,
                                 schedule_year_date(3, 25)?,
+                            ])
+                        }
+                        "!! On February 18, 25, March 4, 11 arrival time will be 5:35 PM." => {
+                            text_date_restriction(&mut self.exclamationexclamation_text, "Arrival time will be 5:35 PM").only.extend([
+                                schedule_year_date(2, 18)?,
+                                schedule_year_date(2, 25)?,
+                                schedule_year_date(3, 4)?,
+                                schedule_year_date(3, 11)?,
                             ])
                         }
                         _ => bail!("Unrecognized annotation text: {:?}", annotation_text),

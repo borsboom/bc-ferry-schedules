@@ -6,19 +6,19 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+      - uses: extractions/setup-just@v1
       - uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build.yaml
           branch: main
           workflow_conclusion: success
           check_artifacts: true
-      - run: chmod a+x artifact/ferrysched_scraper
+      - run: chmod a+x release/ferrysched_scraper
       - env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-        run: |
-          release/ferrysched_scraper \
-            --output-s3-bucket "${{ secrets.S3_BUCKET }}" \
-            --output-s3-key v1/schedules.json \
-            --invalidate-cloudfront-distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: just _upload-data-with-bin release/ferrysched_scraper

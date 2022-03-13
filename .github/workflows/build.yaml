@@ -1,6 +1,7 @@
 name: build
-on: [push]
+on: push
 jobs:
+
   check:
     runs-on: ubuntu-latest
     steps:
@@ -8,15 +9,13 @@ jobs:
       - uses: extractions/setup-just@v1
       - run: just check
 
-  docker:
-    if: github.ref_name == 'main'
-    needs: check
+  build:
+    if: github.ref_name == 'main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    env:
-      DOCKER_REPO: ghcr.io/${{ github.repository }}
     steps:
       - uses: actions/checkout@v2
-      - uses: extractions/setup-just@v1
-      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
-      - run: just docker-push latest
-      - run: just docker-push "${{ github.workflow }}-${{ github.run_number }}"
+      - run: cargo build --release --bin ferrysched_scraper
+      - uses: actions/upload-artifact@v3
+        with:
+          name: release
+          path: target/release/ferrysched_scraper

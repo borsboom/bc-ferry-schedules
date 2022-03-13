@@ -42,15 +42,5 @@ upload-data *args:
         --invalidate-cloudfront-distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
         "$@"
 
-docker-build:
-    sed '/^# CONTENTS BELOW THIS LINE/q' .dockerignore >.dockerignore.new
-    cat .gitignore >>.dockerignore.new
-    mv .dockerignore.new .dockerignore
-    docker build -t local/bc-ferry-schedules .
-
-docker-push tag="latest": docker-build
-    docker tag local/bc-ferry-schedules "$DOCKER_REPO:{{tag}}"
-    docker push "$DOCKER_REPO:{{tag}}"
-
 clean:
     rm -rf Cargo.lock frontend/dist/ frontend/dist-release/ frontend/local-data/ target/

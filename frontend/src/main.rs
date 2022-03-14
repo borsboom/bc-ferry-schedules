@@ -86,7 +86,8 @@ fn home_html() -> Html {
             <small class="text-muted">{ " for the Outer Gulf Islands" }</small>
         </h1>
         <p class="lead">
-            { "An easy to use and understand presentation of the BC Ferries schedules serving Galiano, Mayne, Pender, and Saturna Islands to/from Victoria, Vancouver, and Salt Spring Island.  Just select your terminals and date, and you're shown the sailings for that day."}
+            { "An easy to use and understand presentation of the BC Ferries schedules serving Galiano, Mayne, Pender, and Saturna Islands to/from Victoria, Vancouver, and Salt Spring Island. " }
+            { "Just select your terminals and date, and you're shown the sailings for that day."}
         </p>
         { select_from_terminal_html(&SailingsQuery::new()) }
         <p>

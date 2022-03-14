@@ -8,6 +8,7 @@ static MAX_THRU_FARE_TRANSFER_DURATION: Lazy<Duration> = Lazy::new(|| Duration::
 pub struct SailingWithNotes {
     pub sailing: Sailing,
     pub notes: Vec<String>,
+    pub is_thrufare: bool,
 }
 
 fn schedule_sailings_for_date(schedule: &Schedule, date: NaiveDate) -> Vec<SailingWithNotes> {
@@ -21,7 +22,7 @@ fn schedule_sailings_for_date(schedule: &Schedule, date: NaiveDate) -> Vec<Saili
                     .filter_map(|(a, dr)| dr.includes_date(date).then(|| a.as_ref()))
                     .map(String::from)
                     .collect();
-                sailings.push(SailingWithNotes { sailing: item.sailing.clone(), notes });
+                sailings.push(SailingWithNotes { sailing: item.sailing.clone(), notes, is_thrufare: false });
             }
         }
     }
@@ -60,6 +61,7 @@ fn get_potential_thrufare_sailings(
                     stops,
                 },
                 notes,
+                is_thrufare: true,
             })
         }
     }

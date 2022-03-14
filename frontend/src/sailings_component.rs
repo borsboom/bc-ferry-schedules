@@ -56,12 +56,13 @@ fn stop_html(stop: &Stop) -> Html {
 }
 
 fn sailing_row_html(sailing: &SailingWithNotes) -> Html {
-    let td_class = (!sailing.notes.is_empty()).then(|| "border-bottom-0");
+    let main_td_class = (!sailing.notes.is_empty()).then(|| "border-bottom-0");
+    let all_td_class = sailing.is_thrufare.then(|| "text-muted");
     html! { <>
         <tr>
-            <td class={classes!(td_class)}>{ format_time(sailing.sailing.depart_time) }</td>
-            <td class={classes!(td_class)}>{ format_time(sailing.sailing.arrive_time) }</td>
-            <td class={classes!("text-nowrap", td_class)}>
+            <td class={ classes!(all_td_class, main_td_class) }>{ format_time(sailing.sailing.depart_time) }</td>
+            <td class={ classes!(all_td_class, main_td_class) }>{ format_time(sailing.sailing.arrive_time) }</td>
+            <td class={ classes!("text-nowrap", all_td_class, main_td_class) }>
                 { if sailing.sailing.stops.is_empty() { html! {
                     <span class="text-muted">{ "non-stop" }</span>
                 }} else { html! {
@@ -73,7 +74,7 @@ fn sailing_row_html(sailing: &SailingWithNotes) -> Html {
         </tr>
         { if !sailing.notes.is_empty() { html! {
             <tr>
-                <td colspan="3" class="small pt-0">
+                <td colspan="3" class={ classes!("small", "pt-0", all_td_class) }>
                     <ul class="mb-0">
                         { for sailing.notes.iter().map(|note| { html! {
                             <li>{ note }</li>

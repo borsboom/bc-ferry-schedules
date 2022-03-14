@@ -70,9 +70,9 @@ pub struct Schedule {
 }
 
 impl TerminalCode {
-    pub fn is_outer_gulf_island(&self) -> bool {
+    pub fn is_gulf_island(&self) -> bool {
         match *self {
-            TerminalCode::PLH => false,
+            TerminalCode::PLH => true,
             TerminalCode::POB => true,
             TerminalCode::PSB => true,
             TerminalCode::PST => true,
@@ -138,7 +138,7 @@ impl TerminalCodePair {
     }
 
     pub fn is_visible(&self) -> bool {
-        self.from != self.to && (self.from.is_outer_gulf_island() || self.to.is_outer_gulf_island())
+        self.from != self.to && (self.from.is_gulf_island() || self.to.is_gulf_island())
     }
 
     pub fn includes_tsa(&self) -> bool {

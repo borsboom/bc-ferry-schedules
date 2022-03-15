@@ -172,9 +172,12 @@ fn footer_html() -> Html {
             <div>
                 { "Created by " }
                 <a class="link-dark" href="https://borsboom.io/" target="#blank">{ "Emanuel Borsboom" }</a>
-                { "." }
-                { " Source code on " }
+                { ". " }
+                { "Source code on " }
                 <a class="link-dark" href="https://github.com/borsboom/bc-ferry-schedules" target="#blank">{ "Github" }</a>
+                { ". " }
+                { "Send feedback to " }
+                <a class="link-dark" href="mailto:ferries@borsboom.io" target="#blank">{ "ferries@borsboom.io" }</a>
                 { "." }
             </div>
             <div class="text-muted">{ "This site is independently operated and is not affiliated with British Columbia Ferry Services Inc." }</div>

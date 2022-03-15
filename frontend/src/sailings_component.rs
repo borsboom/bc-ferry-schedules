@@ -250,6 +250,9 @@ impl SailingsModel {
                             { "current conditions" }
                         </a>
                         { " before you depart." }
+                        { " If you find a mistake, send feedback to " }
+                        <a class="link-secondary" href="mailto:ferries@borsboom.io" target="#blank">{ "ferries@borsboom.io" }</a>
+                        { "." }
                     </div>
                 </small>
             </div>

@@ -170,11 +170,6 @@ fn footer_html() -> Html {
         <div class="small">
             <hr class="mb-1"/>
             <div>
-                <a href="https://github.com/borsboom/bc-ferry-schedules/actions/workflows/scrape.yaml" target="#blank">
-                    <img src="https://github.com/borsboom/bc-ferry-schedules/actions/workflows/scrape.yaml/badge.svg" alt="scrape status"/>
-                </a>
-            </div>
-            <div>
                 { "Created by " }
                 <a class="link-dark" href="https://borsboom.io/" target="#blank">{ "Emanuel Borsboom" }</a>
                 { ". " }

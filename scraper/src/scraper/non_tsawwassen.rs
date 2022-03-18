@@ -15,7 +15,10 @@ fn parse_annotations(table_elem: &ElementRef, date_range: &DateRange) -> Result<
         for row_elem in table_elem.select(selector!("tr:not(:first-child)")) {
             let cell_elems: Vec<ElementRef> = row_elem.select(selector!("td")).collect();
             if cell_elems.len() == 4 {
-                item_rows.push(cell_elems.iter().map(element_text).collect());
+                let item_row: Vec<_> = cell_elems.iter().map(element_text).collect();
+                if !item_row.iter().all(String::is_empty) {
+                    item_rows.push(item_row);
+                }
             } else if cell_elems.len() == 1 || (cell_elems.len() == 2 && element_text(&cell_elems[1]).is_empty()) {
                 let annotation_texts = element_texts(&cell_elems[0]);
                 annotations.parse(annotation_texts, date_range)?;

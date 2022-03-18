@@ -55,6 +55,9 @@ impl WeekdayDates {
                 "Dec 26 & 27 only" => "Dec 26, Dec 27",
                 "Fri-Sun, Hol Mon & Apr 14 only" => "Fri-Sun, Hol Mon, Apr 14",
                 "Dec 22, 27" => "Dec 22, Dec 27",
+                "Dec 26-27" => "Dec 26, Dec 27",
+                "Sep 19 & Oct 3" => "Sep 19, Oct 3",
+                "Sep 12, 26 & Oct 10" => "Sep 12, Sep 26, Oct 10",
                 text => text,
             };
             for split_text in normalized_text.split(',').map(|s| s.trim().to_lowercase()) {
@@ -76,6 +79,7 @@ impl WeekdayDates {
                             result.day_only(Weekday::Mon, &annotations.holiday_monday)
                         }
                     }
+                    "mon-wed" => result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed]),
                     "mon-thu" => result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed, Weekday::Thu]),
                     "mon-fri" => result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed, Weekday::Thu, Weekday::Fri]),
                     "mon-sat" => result.days([
@@ -88,9 +92,10 @@ impl WeekdayDates {
                     ]),
                     "thu-sat" => result.days([Weekday::Thu, Weekday::Fri, Weekday::Sat]),
                     "fri-sun" => result.days([Weekday::Fri, Weekday::Sat, Weekday::Sun]),
-                    "thu**" => result.day_restriction(Weekday::Thu, &annotations.starstar),
-                    "sat**" => result.day_restriction(Weekday::Sat, &annotations.starstar),
-                    "sun**" => result.day_restriction(Weekday::Sun, &annotations.starstar),
+                    "thu**" => result.day_restriction(Weekday::Thu, &annotations.star2),
+                    "sat**" => result.day_restriction(Weekday::Sat, &annotations.star2),
+                    "sun**" => result.day_restriction(Weekday::Sun, &annotations.star2),
+                    "sun***" => result.day_restriction(Weekday::Sun, &annotations.star3),
                     "mon*-thu" => {
                         result.day_restriction(Weekday::Mon, &annotations.star);
                         result.days([Weekday::Tue, Weekday::Wed, Weekday::Thu]);
@@ -101,7 +106,7 @@ impl WeekdayDates {
                     }
                     "mon-thu**" => {
                         result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed]);
-                        result.day_restriction(Weekday::Thu, &annotations.starstar);
+                        result.day_restriction(Weekday::Thu, &annotations.star2);
                     }
                     "mon-thu*" => {
                         result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed]);
@@ -110,7 +115,7 @@ impl WeekdayDates {
                     "mon*-thu**" => {
                         result.day_restriction(Weekday::Mon, &annotations.star);
                         result.days([Weekday::Tue, Weekday::Wed]);
-                        result.day_restriction(Weekday::Thu, &annotations.starstar);
+                        result.day_restriction(Weekday::Thu, &annotations.star2);
                     }
                     "mon*-fri" => {
                         result.day_restriction(Weekday::Mon, &annotations.star);
@@ -118,7 +123,7 @@ impl WeekdayDates {
                     }
                     "mon-sat**" => {
                         result.days([Weekday::Mon, Weekday::Tue, Weekday::Wed, Weekday::Thu, Weekday::Fri]);
-                        result.day_restriction(Weekday::Sat, &annotations.starstar);
+                        result.day_restriction(Weekday::Sat, &annotations.star2);
                     }
                     "mon*-sat" => {
                         result.day_restriction(Weekday::Mon, &annotations.star);

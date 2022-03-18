@@ -12,11 +12,11 @@ pub struct DepartTimeAndRowAnnotations {
 impl DepartTimeAndRowAnnotations {
     pub fn parse(orig_text: &str, annotations: &Annotations) -> Result<DepartTimeAndRowAnnotations> {
         let star_suffix_re: &Regex = regex!(r"(M) ?\*$");
-        let starstar_suffix_re: &Regex = regex!(r"(M) ?\*\*$");
+        let star2_suffix_re: &Regex = regex!(r"(M) ?\*\*$");
         let exclamation_suffix_re: &Regex = regex!(r"(M) ?!$");
         let hash_suffix_re: &Regex = regex!(r"(M) ?#$");
         let plus_suffix_re: &Regex = regex!(r"(M) ?\+$");
-        let exclamationexclamation_suffix_re: &Regex = regex!(r"(M) ?!!$");
+        let exclamation2_suffix_re: &Regex = regex!(r"(M) ?!!$");
         let exclamation_plus_suffix_re: &Regex = regex!(r"(M) ?! ?\+$");
         let mut row_dates = AnnotationDates::new();
         let mut row_dates_by_time = HashMap::new();
@@ -27,12 +27,12 @@ impl DepartTimeAndRowAnnotations {
             row_notes.extend(annotations.exclamation_text.clone().into_iter());
             row_notes.extend(annotations.plus_text.clone().into_iter());
             exclamation_plus_suffix_re.replace(orig_text, "$1")
-        } else if exclamationexclamation_suffix_re.is_match(orig_text) {
-            row_notes.extend(annotations.exclamationexclamation_text.clone().into_iter());
-            exclamationexclamation_suffix_re.replace(orig_text, "$1")
-        } else if starstar_suffix_re.is_match(orig_text) {
-            row_dates.extend(&annotations.starstar);
-            starstar_suffix_re.replace(orig_text, "$1")
+        } else if exclamation2_suffix_re.is_match(orig_text) {
+            row_notes.extend(annotations.exclamation2_text.clone().into_iter());
+            exclamation2_suffix_re.replace(orig_text, "$1")
+        } else if star2_suffix_re.is_match(orig_text) {
+            row_dates.extend(&annotations.star2);
+            star2_suffix_re.replace(orig_text, "$1")
         } else if star_suffix_re.is_match(orig_text) {
             row_dates.extend(&annotations.star);
             row_dates_by_time.extend(&annotations.star_by_time);

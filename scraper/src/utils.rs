@@ -40,6 +40,7 @@ fn terminal_code_from_schedule_stop_text(stop_text: &str) -> Result<TerminalCode
         "saturna" | "saturna island (lyall harbour)" => Ok(TerminalCode::PST),
         "galiano" | "galiano island (sturdies bay)" => Ok(TerminalCode::PSB),
         "salt spring" | "salt spring island (long harbour)" => Ok(TerminalCode::PLH),
+        "victoria (swartz bay)" => Ok(TerminalCode::PLH),
         _ => Err(anyhow!("Unknown schedule stop name: {:?}", stop_text)),
     }
 }

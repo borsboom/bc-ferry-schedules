@@ -135,7 +135,7 @@ async fn scrape_schedule(
             return Ok(None);
         }
         let document = cache
-            .get_html(&source_url, &IGNORE_HTML_CHANGES_REGEX)
+            .get_html(&source_url, &HTML_ERROR_REGEX)
             .await
             .with_context(|| format!("Failed to download schedule HTML from: {:?}", source_url))?;
         info!("Parsing schedule for {}, {}", terminal_pair, date_range);
@@ -166,7 +166,7 @@ pub async fn scrape_tsawwassen_schedules(
     let base_url = schedule_base_url(terminal_pair);
     let inner = async {
         let base_document = cache
-            .get_html(&base_url, &IGNORE_HTML_CHANGES_REGEX)
+            .get_html(&base_url, &HTML_ERROR_REGEX)
             .await
             .with_context(|| format!("Failed to download base schedule HTML from: {:?}", base_url))?;
         let schedule_container_elem = base_document

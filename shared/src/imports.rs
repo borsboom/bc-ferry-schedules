@@ -2,7 +2,7 @@ pub use anyhow::{anyhow, bail, ensure, Context, Result};
 pub use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc, Weekday};
 pub use chrono_tz::{Canada::Pacific, Tz};
 pub use log;
-pub use log::{debug, error, info};
+pub use log::{debug, error, info, warn};
 pub use once_cell::sync::{Lazy, OnceCell};
 pub use serde::de::DeserializeOwned;
 pub use serde::{Deserialize, Serialize};

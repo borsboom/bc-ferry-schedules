@@ -21,4 +21,4 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
-        run: just _upload-data-with-bin release/ferrysched_scraper
+        run: just upload-data-with-bin release/ferrysched_scraper

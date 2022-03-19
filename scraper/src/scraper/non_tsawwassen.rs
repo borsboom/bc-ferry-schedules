@@ -116,7 +116,7 @@ pub async fn scrape_non_tsawwassen_schedules(
     const SOURCE_URL: &str = "https://www.bcferries.com/routes-fares/schedules/southern-gulf-islands";
     let inner = async {
         let document = cache
-            .get_html(SOURCE_URL, &IGNORE_HTML_CHANGES_REGEX)
+            .get_html(SOURCE_URL, &HTML_ERROR_REGEX)
             .await
             .with_context(|| format!("Failed to download schedule HTML from: {:?}", SOURCE_URL))?;
         let mut schedules = Vec::new();

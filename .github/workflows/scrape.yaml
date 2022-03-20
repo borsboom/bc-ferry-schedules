@@ -2,18 +2,8 @@ name: scrape
 on:
   schedule:
     - cron: '44 2 * * *'
-  workflow_call:
-    secrets:
-      AWS_ACCESS_KEY_ID:
-        required: true
-      AWS_SECRET_ACCESS_KEY:
-        required: true
-      AWS_REGION:
-        required: true
-      S3_BUCKET:
-        required: true
-      CLOUDFRONT_DISTRIBUTION_ID:
-        required: true
+  repository_dispatch:
+    types: [scrape]
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -24,7 +14,6 @@ jobs:
         with:
           workflow: build.yaml
           branch: main
-          workflow_conclusion: success
           check_artifacts: true
       - run: chmod a+x release/ferrysched_scraper
       - env:

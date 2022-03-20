@@ -21,16 +21,15 @@ jobs:
           name: release
           path: target/release/ferrysched_scraper
 
-  run-scraper:
+  trigger-scrape:
     if: github.ref_name == 'main' && github.event_name != 'pull_request'
     needs: build-scraper
-    uses: ./.github/workflows/scrape.yaml
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      S3_BUCKET: ${{ secrets.S3_BUCKET }}
-      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          event-type: scrape
 
   deploy-frontend:
     if: github.ref_name == 'main' && github.event_name != 'pull_request'

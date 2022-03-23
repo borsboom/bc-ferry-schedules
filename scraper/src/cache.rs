@@ -33,7 +33,6 @@ impl<'a> Cache<'a> {
         F: Fn(String) -> Result<(T, String)>,
     {
         let retry_number = retry_number.fetch_add(1, atomic::Ordering::SeqCst) + 1;
-        info!("Fetching: {:?}", url);
         let inner = async {
             let response = self.reqwest_client.get(url).send().await?.error_for_status()?;
             transform(response.text().await?)
@@ -41,7 +40,7 @@ impl<'a> Cache<'a> {
         let result = inner.await;
         match &result {
             Err(err) if retry_number <= MAX_RETRIES => {
-                warn!("Will retry (#{} of {}) fetching {:?} due to error: {}", retry_number, MAX_RETRIES, url, err)
+                warn!("Will retry (#{} of {}) fetching {:?} due to: {}", retry_number, MAX_RETRIES, url, err)
             }
             _ => {}
         }
@@ -66,6 +65,7 @@ impl<'a> Cache<'a> {
                     }
                 }
             }
+            info!("Fetching: {:?}", url);
             let retry_number = Arc::new(AtomicUsize::new(0));
             let (value, contents): (_, String) =
                 Retry::spawn(strategy::FibonacciBackoff::from_millis(5).factor(1000).take(MAX_RETRIES), || {

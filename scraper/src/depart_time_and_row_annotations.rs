@@ -18,6 +18,7 @@ impl DepartTimeAndRowAnnotations {
         let plus_suffix_re: &Regex = regex!(r"(M) ?\+$");
         let exclamation2_suffix_re: &Regex = regex!(r"(M) ?!!$");
         let exclamation_plus_suffix_re: &Regex = regex!(r"(M) ?! ?\+$");
+        let exclamation_hash_suffix_re: &Regex = regex!(r"(M) ?! ?#$");
         let mut row_dates = AnnotationDates::new();
         let mut row_dates_by_time = HashMap::new();
         let mut row_notes = HashMap::new();
@@ -27,6 +28,12 @@ impl DepartTimeAndRowAnnotations {
             row_notes.extend(annotations.exclamation_text.clone().into_iter());
             row_notes.extend(annotations.plus_text.clone().into_iter());
             exclamation_plus_suffix_re.replace(orig_text, "$1")
+        } else if exclamation_hash_suffix_re.is_match(orig_text) {
+            row_dates.extend(&annotations.exclamation);
+            row_dates.extend(&annotations.hash);
+            row_notes.extend(annotations.exclamation_text.clone().into_iter());
+            row_notes.extend(annotations.hash_text.clone().into_iter());
+            exclamation_hash_suffix_re.replace(orig_text, "$1")
         } else if exclamation2_suffix_re.is_match(orig_text) {
             row_notes.extend(annotations.exclamation2_text.clone().into_iter());
             exclamation2_suffix_re.replace(orig_text, "$1")

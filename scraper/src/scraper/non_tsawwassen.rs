@@ -100,6 +100,7 @@ fn parse_schedule(
                 date_range,
                 items,
                 source_url: format!("{}#{}", source_url, terminal_pair.from),
+                refreshed_at: Some(Utc::now()),
             }))
         } else {
             Ok(None)

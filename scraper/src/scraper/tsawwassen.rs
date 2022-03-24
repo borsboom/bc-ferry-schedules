@@ -144,7 +144,13 @@ async fn scrape_schedule(
             .next()
             .ok_or_else(|| anyhow!("Missing table element in schedule"))?;
         let items = parse_table(table_elem, &date_range)?;
-        Ok(Some(Schedule { terminal_pair, date_range, items, source_url: source_url.to_string() })) as Result<_>
+        Ok(Some(Schedule {
+            terminal_pair,
+            date_range,
+            items,
+            source_url: source_url.to_string(),
+            refreshed_at: Some(Utc::now()),
+        })) as Result<_>
     };
     inner.await.with_context(|| {
         format!(

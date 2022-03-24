@@ -67,6 +67,7 @@ pub struct Schedule {
     pub date_range: DateRange,
     pub items: Vec<ScheduleItem>,
     pub source_url: String,
+    pub refreshed_at: Option<DateTime<Utc>>,
 }
 
 impl TerminalCode {

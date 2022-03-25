@@ -47,7 +47,7 @@ fn stop_html(stop: &Stop) -> Html {
     html! {
         <li>
         { match stop.type_ {
-            StopType::Stop => html! {},
+            StopType::Stop => html! { "Stop at "},
             StopType::Transfer => html! {"Transfer at "},
         }}
         { stop.terminal.short_location_name() }

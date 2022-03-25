@@ -1,3 +1,4 @@
+pub use chrono_humanize::HumanTime;
 pub use web_sys::HtmlInputElement;
 pub use yew::prelude::*;
 pub use yew_router::prelude::*;

@@ -25,10 +25,10 @@ enum SailingsStateModel {
     Sailings(Vec<SailingWithNotes>),
 }
 
-struct SailingsModel {
+struct SailingsModel<'a> {
     sailings_state_model: SailingsStateModel,
-    source_url: String,
     terminal_pair: TerminalCodePair,
+    source_schedule: Option<&'a Schedule>,
     view_date: NaiveDate,
     max_date: NaiveDate,
 }
@@ -88,34 +88,35 @@ fn sailing_row_html(sailing: &SailingWithNotes) -> Html {
     }</>}
 }
 
-impl SailingsModel {
+impl<'a> SailingsModel<'a> {
     fn new(
-        schedules_state: &SchedulesState,
+        schedules_state: &'a SchedulesState,
         date_input_state: &DateInputState,
         terminal_pair: TerminalCodePair,
         query_date_or_today: NaiveDate,
-    ) -> SailingsModel {
+    ) -> SailingsModel<'a> {
+        let base = SailingsModel {
+            sailings_state_model: SailingsStateModel::NoSailings,
+            terminal_pair,
+            source_schedule: None,
+            view_date: query_date_or_today,
+            max_date: query_date_or_today,
+        };
         match (date_input_state.value, schedules_state) {
-            (Err(err), _) => SailingsModel {
-                sailings_state_model: SailingsStateModel::InvalidDate(err.to_string()),
-                source_url: DEFAULT_SCHEDULE_SOURCE_URL.to_string(),
-                terminal_pair,
-                view_date: query_date_or_today,
-                max_date: query_date_or_today,
-            },
+            (Err(err), _) => {
+                SailingsModel { sailings_state_model: SailingsStateModel::InvalidDate(err.to_string()), ..base }
+            }
             (Ok(view_date), SchedulesState::Init) | (Ok(view_date), SchedulesState::Loading) => SailingsModel {
                 sailings_state_model: SailingsStateModel::LoadingSchedules,
-                source_url: DEFAULT_SCHEDULE_SOURCE_URL.to_string(),
-                terminal_pair,
                 view_date,
                 max_date: view_date,
+                ..base
             },
             (Ok(view_date), SchedulesState::Failed) => SailingsModel {
                 sailings_state_model: SailingsStateModel::LoadSchedulesFailed,
-                source_url: DEFAULT_SCHEDULE_SOURCE_URL.to_string(),
-                terminal_pair,
                 view_date,
                 max_date: view_date,
+                ..base
             },
             (Ok(view_date), SchedulesState::Loaded(schedules_map)) => {
                 let max_date = max(
@@ -129,28 +130,21 @@ impl SailingsModel {
                     if sailings.is_empty() {
                         SailingsModel {
                             sailings_state_model: SailingsStateModel::NoSailings,
-                            source_url: DEFAULT_SCHEDULE_SOURCE_URL.to_string(),
-                            terminal_pair,
                             view_date,
                             max_date,
+                            ..base
                         }
                     } else {
                         SailingsModel {
                             sailings_state_model: SailingsStateModel::Sailings(sailings),
-                            source_url: schedule.source_url.clone(),
-                            terminal_pair,
+                            source_schedule: Some(schedule),
                             view_date,
                             max_date,
+                            ..base
                         }
                     }
                 } else {
-                    SailingsModel {
-                        sailings_state_model: SailingsStateModel::NoSchedule,
-                        source_url: DEFAULT_SCHEDULE_SOURCE_URL.to_string(),
-                        terminal_pair,
-                        view_date,
-                        max_date,
-                    }
+                    SailingsModel { sailings_state_model: SailingsStateModel::NoSchedule, view_date, max_date, ..base }
                 }
             }
         }
@@ -173,26 +167,20 @@ impl SailingsModel {
                     { for sailings.iter().map(sailing_row_html) }
                 </tbody>
             </table>
-            <div class="d-flex flex-column align-items-end">
-                <small>
-                    { if self.terminal_pair.includes_tsa() { html! { <>
-                        <div>
-                            <a href="https://www.bcferries.com/" target="#blank">{ "Reservations" }</a>
-                            { " are recommended for direct sailings." }
-                        </div>
-                        <div>
-                            { "See here for more " }
-                            <a href="https://www.bcferries.com/routes-fares/ferry-fares/thru-fare" target="#blank">{ "information about thru fares" }</a>
-                            { "." }
-                        </div>
-                    </> }} else { html! {
-                        <span class="text-muted">
-                            { "This route is not reservable" }
-                        </span>
-                    }
-                    }}
-                </small>
-            </div>
+            { if let Some(schedule) = self.source_schedule { html! {
+                <div class="d-flex flex-column align-items-end text-muted d-print-none">
+                    <small>
+                        { "Refreshed " }
+                        { HumanTime::from(schedule.refreshed_at) }
+                        { " from " }
+                        <a class="link-secondary" href={ schedule.source_url.clone() } target="_blank">
+                            { "original schedule" }
+                        </a>
+                    </small>
+                </div>
+            }} else {
+                html! {}
+            }}
         </> }
     }
 
@@ -227,18 +215,40 @@ impl SailingsModel {
     }
 
     fn html(self) -> Html {
+        let source_url = self
+            .source_schedule
+            .map(|s| s.source_url.clone())
+            .unwrap_or_else(|| DEFAULT_SCHEDULE_SOURCE_URL.to_string());
         html! { <>
             <div class="row mt-4">
                 <div class="col-12 col-md-8 col-lg-6">
                     { self.sailings_html() }
                 </div>
             </div>
-            <div class="mt-4 text-muted">
+            { if self.terminal_pair.includes_tsa() { html! { <>
+                <div class="mt-3">
+                    <small>
+                        <span class="text-nowrap">
+                            <a href="https://www.bcferries.com/" target="_blank">{ "Reservations" }</a>
+                            { " are recommended for direct sailings." }
+                        </span>
+                        { " " }
+                        <span class="text-nowrap">
+                            { "See here for more " }
+                            <a href="https://www.bcferries.com/routes-fares/ferry-fares/thru-fare" target="_blank">{ "information about thru fares" }</a>
+                            { "." }
+                        </span>
+                    </small>
+                </div>
+            </> }} else {
+                html! {}
+            }}
+            <div class="mt-3 text-muted">
                 <small>
                     <div><strong>{ "BC Ferries may adjust schedules at any time and without notice." }</strong></div>
                     <div>
                         { "Confirm all sailings with the " }
-                        <a class="link-secondary" href={ self.source_url } target="#blank">
+                        <a class="link-secondary" href={ source_url } target="_blank">
                             { "original schedule" }
                         </a>
                         { ", and check " }

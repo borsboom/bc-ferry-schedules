@@ -31,7 +31,7 @@ fn navbar_component() -> Html {
                 </div>
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a title="Ko-fi" class="btn btn-outline-light btn-sm" href="https://ko-fi.com/borsboom" target="#blank">
+                        <a title="Ko-fi" class="btn btn-outline-light btn-sm" href="https://ko-fi.com/borsboom" target="_blank">
                             <img src="/assets/ko-fi.png" height="18"/>
                             <small>{ " Buy me a coffee" }</small>
                         </a>
@@ -97,7 +97,7 @@ fn home_html() -> Html {
             <div>
                 { "The schedule data is scraped from BC Ferries' web site and then processed into individual sailings. "}
                 { "This is error prone and the data may be out of date or incorrect. Be sure to double check against the " }
-                <a class="link-dark" href="https://www.bcferries.com/routes-fares/schedules" target="#blank">{ "official schedules" }</a>
+                <a class="link-dark" href="https://www.bcferries.com/routes-fares/schedules" target="_blank">{ "official schedules" }</a>
                 { "." }
             </div>
         </div>
@@ -171,13 +171,13 @@ fn footer_html() -> Html {
             <hr class="mb-1"/>
             <div>
                 { "Created by " }
-                <a class="link-dark" href="https://borsboom.io/" target="#blank">{ "Emanuel Borsboom" }</a>
+                <a class="link-dark" href="https://borsboom.io/" target="_blank">{ "Emanuel Borsboom" }</a>
                 { ". " }
                 { "Source code on " }
-                <a class="link-dark" href="https://github.com/borsboom/bc-ferry-schedules" target="#blank">{ "Github" }</a>
+                <a class="link-dark" href="https://github.com/borsboom/bc-ferry-schedules" target="_blank">{ "Github" }</a>
                 { ". " }
                 { "Send feedback to " }
-                <a class="link-dark" href="mailto:ferries@borsboom.io" target="#blank">{ "ferries@borsboom.io" }</a>
+                <a class="link-dark" href="mailto:ferries@borsboom.io" target="_blank">{ "ferries@borsboom.io" }</a>
                 { "." }
             </div>
             <div class="text-muted">{ "This site is independently operated and is not affiliated with British Columbia Ferry Services Inc." }</div>

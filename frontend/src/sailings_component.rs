@@ -252,16 +252,16 @@ impl<'a> SailingsModel<'a> {
                             { "original schedule" }
                         </a>
                         { ", and check " }
-                        <a class="link-secondary" href="https://www.bcferries.com/current-conditions/service-notices" target="#blank">
+                        <a class="link-secondary" href="https://www.bcferries.com/current-conditions/service-notices" target="_blank">
                             { "service notices" }
                         </a>
                         { " and " }
-                        <a class="link-secondary" href="https://www.bcferries.com/current-conditions" target="#blank">
+                        <a class="link-secondary" href="https://www.bcferries.com/current-conditions" target="_blank">
                             { "current conditions" }
                         </a>
                         { " before you depart." }
                         { " If you find a mistake, send feedback to " }
-                        <a class="link-secondary" href="mailto:ferries@borsboom.io" target="#blank">{ "ferries@borsboom.io" }</a>
+                        <a class="link-secondary" href="mailto:ferries@borsboom.io" target="_blank">{ "ferries@borsboom.io" }</a>
                         { "." }
                     </div>
                 </small>

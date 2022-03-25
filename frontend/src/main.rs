@@ -107,9 +107,14 @@ fn home_html() -> Html {
 #[function_component(SailingsPage)]
 fn sailings_page_component() -> Html {
     let location = use_location();
+    let history = use_history().unwrap();
     let query = location
         .and_then(|l| l.query().map_err(|e| error!("Invalid sailings query: {}", e)).ok())
         .unwrap_or_else(SailingsQuery::new);
+    if query.is_empty() {
+        history.replace(Route::Home);
+        return html! {};
+    }
     html! { <>
         <h1 class="display-6 mb-3 small">
             { "B.C. Ferry Schedule" }

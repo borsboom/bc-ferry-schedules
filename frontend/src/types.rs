@@ -22,6 +22,10 @@ impl SailingsQuery {
     pub fn new() -> SailingsQuery {
         SailingsQuery { from: None, to: None, date: None }
     }
+
+    pub fn is_empty(&self) -> bool {
+        matches!(self, SailingsQuery { from: None, to: None, date: None })
+    }
 }
 
 #[derive(Clone)]

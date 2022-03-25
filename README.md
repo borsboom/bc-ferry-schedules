@@ -16,20 +16,27 @@ and a single page web app front-end to browse the sailings.
 
       * [Rust toolchain](https://www.rust-lang.org/tools/install) - to build
         the scraper and front-end, which are written in Rust.
+
       * [Trunk](https://trunkrs.dev/#install) - to build and view the
         front-end.
+
       * [just](https://github.com/casey/just#installation) - to use commands in
         the [Justfile](Justfile).
 
- 2. Build and run scraper to generate local schedule data file:
+      * Install the Wasm target by running:
+
+            rustup target add wasm32-unknown-unknown
+
+ 2. Build and run scraper to generate local schedule data file by running:
 
         just local-data
 
- 3. Build and serve the front-end web app:
+ 3. Build and serve the front-end web app by running:
 
         just local-frontend
 
- 4. Open http://localhost:8080/ to view the front-end web app.
+ 4. Open http://localhost:8080/ in your web browser to view the front-end web
+    app.
 ## License
 
 Copyright © 2022 Emanuel Borsboom.

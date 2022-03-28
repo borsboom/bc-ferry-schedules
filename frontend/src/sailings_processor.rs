@@ -8,7 +8,6 @@ static MAX_THRU_FARE_TRANSFER_DURATION: Lazy<Duration> = Lazy::new(|| Duration::
 pub struct SailingWithNotes {
     pub sailing: Sailing,
     pub notes: Vec<String>,
-    pub is_thrufare: bool,
 }
 
 fn schedule_sailings_for_date(schedule: &Schedule, date: NaiveDate) -> Vec<SailingWithNotes> {
@@ -22,7 +21,7 @@ fn schedule_sailings_for_date(schedule: &Schedule, date: NaiveDate) -> Vec<Saili
                     .filter_map(|(a, dr)| dr.includes_date(date).then(|| a.as_ref()))
                     .map(String::from)
                     .collect();
-                sailings.push(SailingWithNotes { sailing: item.sailing.clone(), notes, is_thrufare: false });
+                sailings.push(SailingWithNotes { sailing: item.sailing.clone(), notes });
             }
         }
     }
@@ -49,9 +48,9 @@ fn get_potential_thrufare_sailings(
             to_swb_sailings.iter().filter(|to_swb| swb_arrive_time_range.contains(&to_swb.sailing.arrive_time))
         {
             let mut stops = to_swb.sailing.stops.clone();
-            stops.push(Stop { type_: StopType::Transfer, terminal: TerminalCode::SWB });
+            stops.push(Stop { type_: StopType::Thrufare, terminal: TerminalCode::SWB });
             stops.extend(&from_swb.sailing.stops);
-            let mut notes = vec!["Thru fare (connection not guaranteed)".to_string()];
+            let mut notes = vec!["Connection at Victoria not guaranteed".to_string()];
             notes.extend(to_swb.notes.iter().map(|note| format!("To Victoria: {}", note)));
             notes.extend(from_swb.notes.iter().map(|note| format!("From Victoria: {}", note)));
             thrufare_sailings.push(SailingWithNotes {
@@ -61,7 +60,6 @@ fn get_potential_thrufare_sailings(
                     stops,
                 },
                 notes,
-                is_thrufare: true,
             })
         }
     }

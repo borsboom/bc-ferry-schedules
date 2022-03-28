@@ -24,6 +24,7 @@ pub struct TerminalCodePair {
 pub enum StopType {
     Stop,
     Transfer,
+    Thrufare,
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -157,6 +158,12 @@ impl FromStr for TerminalCodePair {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<TerminalCodePair> {
         TerminalCodePair::parse_schedule_code_pair(s)
+    }
+}
+
+impl Sailing {
+    pub fn is_thrufare(&self) -> bool {
+        self.stops.iter().any(|s| s.type_ == StopType::Thrufare)
     }
 }
 

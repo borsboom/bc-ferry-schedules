@@ -47,9 +47,11 @@ fn stop_html(stop: &Stop) -> Html {
     html! {
         <li>
         { match stop.type_ {
-            StopType::Stop => html! { "Stop at "},
-            StopType::Transfer => html! {"Transfer at "},
+            StopType::Stop => "Stop",
+            StopType::Transfer => "Transfer",
+            StopType::Thrufare => "Thru-fare",
         }}
+        { " " }
         { stop.terminal.short_location_name() }
         </li>
     }
@@ -57,7 +59,7 @@ fn stop_html(stop: &Stop) -> Html {
 
 fn sailing_row_html(sailing: &SailingWithNotes) -> Html {
     let main_td_class = (!sailing.notes.is_empty()).then(|| "border-bottom-0");
-    let all_td_class = sailing.is_thrufare.then(|| "text-muted");
+    let all_td_class = sailing.sailing.is_thrufare().then(|| "text-muted");
     html! { <>
         <tr>
             <td class={ classes!(all_td_class, main_td_class) }>{ format_time(sailing.sailing.depart_time) }</td>
@@ -235,7 +237,7 @@ impl<'a> SailingsModel<'a> {
                         { " " }
                         <span class="text-nowrap">
                             { "See here for more " }
-                            <a href="https://www.bcferries.com/routes-fares/ferry-fares/thru-fare" target="_blank">{ "information about thru fares" }</a>
+                            <a href="https://www.bcferries.com/routes-fares/ferry-fares/thru-fare" target="_blank">{ "information about thru-fares" }</a>
                             { "." }
                         </span>
                     </small>

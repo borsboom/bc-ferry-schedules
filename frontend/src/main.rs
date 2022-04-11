@@ -61,20 +61,13 @@ fn select_from_terminal_html(query: &SailingsQuery) -> Html {
     </> }
 }
 
-fn select_to_terminal_html(query: &SailingsQuery) -> Html {
-    let terminal_html = |to| {
-        if query.from.map(|from| TerminalCodePair { from, to }.is_visible()).unwrap_or(true) {
-            html! {
-                <li>{ location_terminal_link_html(to, SailingsQuery{to: Some(to), ..*query}) }</li>
-            }
-        } else {
-            html! {}
-        }
-    };
+fn select_to_terminal_html(from: TerminalCode, query: &SailingsQuery) -> Html {
     html! { <>
         <p class="mt-3">{ "Select your arrival terminal:" }</p>
         <ul>
-            { for TerminalCode::iter().map(terminal_html) }
+            { for TerminalCode::iter().filter(|&to| (TerminalCodePair { from, to }).is_visible()).map(|to| html! {
+                <li>{ location_terminal_link_html(to, SailingsQuery{to: Some(to), ..*query}) }</li>
+            }) }
         </ul>
     </> }
 }
@@ -140,12 +133,12 @@ fn sailings_page_component() -> Html {
         </h5>
         { match query {
             SailingsQuery { from: None, .. } => select_from_terminal_html(&query),
-            SailingsQuery { from: Some(_), to: None, .. } => select_to_terminal_html(&query),
+            SailingsQuery { from: Some(from), to: None, .. } => select_to_terminal_html(from, &query),
             SailingsQuery { from: Some(from), to: Some(to), date } => {
                 if (TerminalCodePair { from, to }.is_visible()) { html! {
                     <Sailings terminal_pair={TerminalCodePair{from, to}} {date}/>
                 }} else {
-                    select_to_terminal_html(&query)
+                    select_to_terminal_html(from, &query)
                 }
             }
         }}

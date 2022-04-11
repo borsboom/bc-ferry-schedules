@@ -221,13 +221,22 @@ impl<'a> SailingsModel<'a> {
             .source_schedule
             .map(|s| s.source_url.clone())
             .unwrap_or_else(|| DEFAULT_SCHEDULE_SOURCE_URL.to_string());
+        let (current_conditions_url, service_notices_url) = self.source_schedule.and_then(|schedule| {
+            if schedule.terminal_pair.includes_terminal(TerminalCode::SWB) {
+                Some(("https://www.bcferries.com/current-conditions/SWB-SGI", "https://www.bcferries.com/current-conditions/service-notices#Vancouver%20Island%20-%20Southern%20Gulf%20Islands"))
+            } else if schedule.terminal_pair.includes_terminal(TerminalCode::TSA) {
+                Some(("https://www.bcferries.com/current-conditions/TSA-SGI", "https://www.bcferries.com/current-conditions/service-notices#Metro%20Vancouver%20-%20Southern%20Gulf%20Islands"))
+            } else {
+                None
+            }
+        }).unwrap_or(("https://www.bcferries.com/current-conditions", "https://www.bcferries.com/current-conditions/service-notices"));
         html! { <>
             <div class="row mt-4">
                 <div class="col-12 col-md-8 col-lg-6">
                     { self.sailings_html() }
                 </div>
             </div>
-            { if self.terminal_pair.includes_tsa() { html! { <>
+            { if self.terminal_pair.includes_terminal(TerminalCode::TSA) { html! { <>
                 <div class="mt-3">
                     <small>
                         <span class="text-nowrap">
@@ -254,11 +263,11 @@ impl<'a> SailingsModel<'a> {
                             { "original schedule" }
                         </a>
                         { ", and check " }
-                        <a class="link-secondary" href="https://www.bcferries.com/current-conditions/service-notices" target="_blank">
+                        <a class="link-secondary" href={ service_notices_url } target="_blank">
                             { "service notices" }
                         </a>
                         { " and " }
-                        <a class="link-secondary" href="https://www.bcferries.com/current-conditions" target="_blank">
+                        <a class="link-secondary" href={ current_conditions_url } target="_blank">
                             { "current conditions" }
                         </a>
                         { " before you depart." }

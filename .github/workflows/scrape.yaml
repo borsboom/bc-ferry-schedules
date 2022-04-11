@@ -1,7 +1,7 @@
 name: scrape
 on:
   schedule:
-    - cron: '44 2 * * *'
+    - cron: '44 11 * * *'
   repository_dispatch:
     types: [scrape]
 jobs:

@@ -139,12 +139,14 @@ impl TerminalCodePair {
         format!("{}-{}", self.from, self.to)
     }
 
-    pub fn is_visible(&self) -> bool {
-        self.from != self.to && (self.from.is_gulf_island() || self.to.is_gulf_island())
+    pub fn includes_terminal(&self, terminal: TerminalCode) -> bool {
+        self.from == terminal || self.to == terminal
     }
 
-    pub fn includes_tsa(&self) -> bool {
-        self.from == TerminalCode::TSA || self.to == TerminalCode::TSA
+    pub fn is_visible(&self) -> bool {
+        self.from != self.to
+            && (self.from.is_gulf_island() || self.to.is_gulf_island())
+            && !(self.from == TerminalCode::SWB && self.to == TerminalCode::PLH)
     }
 }
 

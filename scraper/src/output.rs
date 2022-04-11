@@ -1,7 +1,7 @@
 use crate::imports::*;
 use crate::types::*;
 
-static S3_CACHE_MAX_AGE: Lazy<Duration> = Lazy::new(|| Duration::days(1));
+static S3_CACHE_MAX_AGE: Lazy<Duration> = Lazy::new(|| Duration::hours(12));
 
 async fn upload_to_s3(aws_config: &aws_config::Config, bucket: &str, key: &str, schedules: &[Schedule]) -> Result<()> {
     info!("Uploading schedules JSON to: s3://{}/{}", bucket, key);

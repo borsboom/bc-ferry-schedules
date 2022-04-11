@@ -172,7 +172,7 @@ impl<'a> SailingsModel<'a> {
             { if let Some(schedule) = self.source_schedule { html! {
                 <div class="d-flex flex-column align-items-end text-muted d-print-none">
                     <small>
-                        { "Refreshed " }
+                        { "Data updated " }
                         { HumanTime::from(schedule.refreshed_at) }
                         { " from " }
                         <a class="link-secondary" href={ schedule.source_url.clone() } target="_blank">

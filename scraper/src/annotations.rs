@@ -171,6 +171,10 @@ impl Annotations {
                                 date(2022, 2, 21),
                                 date(2022, 4, 18),
                             ]),
+                        "* On April 18, 2022 the Holiday Monday Schedule is in effect" =>
+                            self.star_holiday_monday_extend(&[
+                                date(2022, 4, 18),
+                            ]),
                         "** Except on December 25, 2021 & January 1, 2022" =>
                             self.star2.except.extend([
                                 date(2021, 12, 25),

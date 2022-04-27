@@ -428,6 +428,7 @@ impl Annotations {
                                 schedule_year_date(3, 11)?,
                             ])
                         }
+                        "View dangerous goods sailings" => {}
                         _ => bail!("Unrecognized annotation text: {:?}", annotation_text),
                     }
                 }

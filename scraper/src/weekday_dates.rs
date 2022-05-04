@@ -38,6 +38,10 @@ impl WeekdayDates {
         self.day_mut(date.weekday()).only.insert(date);
     }
 
+    fn except_date(&mut self, date: NaiveDate) {
+        self.day_mut(date.weekday()).except.insert(date);
+    }
+
     pub fn parse(orig_text: &str, annotations: &Annotations, date_range: &DateRange) -> Result<WeekdayDates> {
         let inner = || {
             let mut result = WeekdayDates::new();
@@ -58,6 +62,7 @@ impl WeekdayDates {
                 "Dec 26-27" => "Dec 26, Dec 27",
                 "Sep 19 & Oct 3" => "Sep 19, Oct 3",
                 "Sep 12, 26 & Oct 10" => "Sep 12, Sep 26, Oct 10",
+                "Mon-Fri, Hol Mon except May 30" => "Mon-Fri, Hol Mon, except May 30",
                 text => text,
             };
             for split_text in normalized_text.split(',').map(|s| s.trim().to_lowercase()) {
@@ -128,6 +133,9 @@ impl WeekdayDates {
                     "mon*-sat" => {
                         result.day_restriction(Weekday::Mon, &annotations.star);
                         result.days([Weekday::Tue, Weekday::Wed, Weekday::Thu, Weekday::Fri, Weekday::Sat]);
+                    }
+                    "except may 30" => {
+                        result.except_date(date_range.make_year_within(date(from_year, 5, 30))?);
                     }
                     _ => bail!("Unrecognized days item text: {:?}", split_text),
                 }

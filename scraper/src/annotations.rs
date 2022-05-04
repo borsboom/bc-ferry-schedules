@@ -171,9 +171,17 @@ impl Annotations {
                                 date(2022, 2, 21),
                                 date(2022, 4, 18),
                             ]),
-                        "* On April 18, 2022 the Holiday Monday Schedule is in effect" =>
+                        "* On April 18, 2022 the Holiday Monday Schedule is in effect" | "* On April 18, 2022, the Monday schedule is in effect until 2:00 pm, the Holiday Monday Schedule is in effect after 2:00 pm" =>
                             self.star_holiday_monday_extend(&[
                                 date(2022, 4, 18),
+                            ]),
+                        "* On April 18th, the Monday schedule is in effect until 2:00 pm, the Holiday Monday Schedule is in effect after 2:00 pm" =>
+                            self.star_holiday_monday_extend(&[
+                                schedule_year_date(4, 18)?,
+                            ]),
+                        "* On May 23rd, the Monday schedule is in effect until 2:00 pm, the Holiday Monday Schedule is in effect after 2:00 pm" =>
+                            self.star_holiday_monday_extend(&[
+                                schedule_year_date(5, 23)?,
                             ]),
                         "** Except on December 25, 2021 & January 1, 2022" =>
                             self.star2.except.extend([
@@ -235,11 +243,11 @@ impl Annotations {
                             self.star_holiday_monday_extend(&[schedule_year_date(4, 18)?]),
                         "* On May 23rd the Holiday Monday schedule is in effect" =>
                             self.star_holiday_monday_extend(&[schedule_year_date(5, 23)?]),
-                        "* On August 1st and September 5th 2022, the Holiday Monday schedule is in effect" =>
+                        "* On August 1st and September 5th 2022, the Holiday Monday schedule is in effect" | "* On August 1st and September 5th 2022, the Monday schedule is in effect until 2:00 pm, the Holiday Monday Schedule is in effect after 2:00 pm" =>
                             self.star_holiday_monday_extend(&[date(2022, 8, 1), date(2022, 9, 5)]),
-                        "* On October 10, 2022, the Holiday Monday Schedule is in effect" =>
+                        "* On October 10, 2022, the Holiday Monday Schedule is in effect" | "* On October 10, 2022, the Monday schedule is in effect until 2:00 pm, the Holiday Monday Schedule is in effect after 2:00 pm" =>
                             self.star_holiday_monday_extend(&[date(2022, 10, 10)]),
-                        "* On December 26, 2022, January 2 & February 20, 2023 the Holiday Monday schedule is in effect" =>
+                        "* On December 26, 2022, January 2 & February 20, 2023 the Holiday Monday schedule is in effect" | "* On December 26, 2022, January 2 & February 20, 2023, the Monday schedule is in effect until 2:00 pm, the Holiday Monday Schedule is in effect after 2:00 pm" =>
                             self.star_holiday_monday_extend(&[date(2022, 12, 26), date(2023, 1, 2), date(2023, 2, 20)]),
                         "** Except February 14 to March 28, 2022" =>
                             self.star2.except.extend(
@@ -397,6 +405,9 @@ impl Annotations {
                             }.iter_days()),
                         "# Foot passengers only on this sailing" => {
                             text_date_restriction(&mut self.hash_text, "Foot passengers only");
+                        }
+                        "# Foot passengers only on this sailing except the 9:10 AM sailing on May 30 which will permit vehicles" => {
+                            text_date_restriction(&mut self.hash_text, "Foot passengers only on this sailing except the 9:10 AM sailing on May 30 which will permit vehicles");
                         }
                         "+ Foot passengers only Fridays February 18, 25, March 4, 11, 18, 25" =>
                             text_date_restriction(&mut self.plus_text, "Foot passengers only").only.extend([

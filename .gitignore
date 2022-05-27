@@ -2,5 +2,5 @@
 Cargo.lock
 frontend/dist-release/
 frontend/dist/
-frontend/local-data/
+frontend/local/
 target/

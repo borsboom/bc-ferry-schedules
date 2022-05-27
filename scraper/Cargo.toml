@@ -6,9 +6,10 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
-aws-config = "0.8"
-aws-sdk-cloudfront = "0.8"
-aws-sdk-s3 = "0.8"
+aws-config = "0.12"
+aws-sdk-cloudfront = "0.12"
+aws-sdk-s3 = "0.12"
+aws-types = "0.12"
 clap = { version = "3.0", features = ["derive", "env"] }
 directories = "4.0"
 dotenv = "0.15"
@@ -16,8 +17,9 @@ env_logger = "0.9"
 ferrysched_shared = { path = "../shared" }
 regex = "1.5"
 reqwest = "0.11"
-scraper = "0.12"
-selectors = "0.22"
+scraper = "0.13"
+selectors = "0.22" # Version must match scaper's dependency
 serde_json = "1.0"
+time = { version = "0.3", features = ["formatting", "serde", "serde-human-readable"] }
 tokio = { version = "1.16", features = ["full"] }
 tokio-retry = "0.3"

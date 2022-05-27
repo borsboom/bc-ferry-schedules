@@ -112,7 +112,7 @@ fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<Sch
 }
 
 fn parse_date_range(text: &str) -> Result<DateRange> {
-    DateRange::parse(text, "%Y%m%d", "-")
+    DateRange::parse(text, format_description!("[year][month][day]"), "-")
         .with_context(|| format!("Failed to parse schedule query date range: {:?}", text))
 }
 
@@ -125,7 +125,7 @@ async fn scrape_schedule(
     cache: &Cache<'_>,
     terminal_pair: TerminalCodePair,
     date_range_query_value: &str,
-    today: NaiveDate,
+    today: Date,
 ) -> Result<Option<Schedule>> {
     let source_url = format!("{}?departureDate={}", schedule_base_url(terminal_pair), date_range_query_value);
     let inner = async {
@@ -149,7 +149,7 @@ async fn scrape_schedule(
             date_range,
             items,
             source_url: source_url.to_string(),
-            refreshed_at: Utc::now(),
+            refreshed_at: OffsetDateTime::now_utc(),
         })) as Result<_>
     };
     inner.await.with_context(|| {
@@ -164,7 +164,7 @@ pub async fn scrape_tsawwassen_schedules(
     options: &Options,
     cache: &Cache<'_>,
     terminal_pair: TerminalCodePair,
-    today: NaiveDate,
+    today: Date,
 ) -> Result<Vec<Schedule>> {
     if options.terminals.is_some() && options.terminals != Some(terminal_pair) {
         return Ok(vec![]);

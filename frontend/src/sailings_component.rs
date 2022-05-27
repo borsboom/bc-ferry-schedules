@@ -8,12 +8,12 @@ const DEFAULT_SCHEDULE_SOURCE_URL: &str = "https://www.bcferries.com/routes-fare
 #[derive(Properties, PartialEq)]
 pub struct SailingsProps {
     pub terminal_pair: TerminalCodePair,
-    pub date: Option<NaiveDate>,
+    pub date: Option<Date>,
 }
 
 struct DateInputState {
     input: String,
-    value: core::result::Result<NaiveDate, &'static str>,
+    value: StdResult<Date, &'static str>,
 }
 
 enum SailingsStateModel {
@@ -29,18 +29,18 @@ struct SailingsModel<'a> {
     sailings_state_model: SailingsStateModel,
     terminal_pair: TerminalCodePair,
     source_schedule: Option<&'a Schedule>,
-    view_date: NaiveDate,
-    max_date: NaiveDate,
+    view_date: Date,
+    max_date: Date,
 }
 
 struct FormModel {
     history: AnyHistory,
     date_input_state: UseStateHandle<DateInputState>,
     terminal_pair: TerminalCodePair,
-    query_date: Option<NaiveDate>,
-    today: NaiveDate,
-    view_date: NaiveDate,
-    max_date: NaiveDate,
+    query_date: Option<Date>,
+    today: Date,
+    view_date: Date,
+    max_date: Date,
 }
 
 fn stop_html(stop: &Stop) -> Html {
@@ -95,7 +95,7 @@ impl<'a> SailingsModel<'a> {
         schedules_state: &'a SchedulesState,
         date_input_state: &DateInputState,
         terminal_pair: TerminalCodePair,
-        query_date_or_today: NaiveDate,
+        query_date_or_today: Date,
     ) -> SailingsModel<'a> {
         let base = SailingsModel {
             sailings_state_model: SailingsStateModel::NoSailings,
@@ -155,7 +155,7 @@ impl<'a> SailingsModel<'a> {
     fn sailings_table_html(&self, sailings: &[SailingWithNotes]) -> Html {
         html! { <>
             <div>
-                <h6>{ self.view_date.format("%A, %-d %B, %C%y") }</h6>
+                <h6>{ self.view_date.format(format_description!("[weekday], [day padding:none] [month repr:long], [year]")).unwrap() }</h6>
             </div>
             <table class="table table-light mb-0">
                 <thead class="table-dark">
@@ -173,7 +173,7 @@ impl<'a> SailingsModel<'a> {
                 <div class="d-flex flex-column align-items-end text-muted d-print-none">
                     <small>
                         { "Data updated " }
-                        { HumanTime::from(schedule.refreshed_at) }
+                        { human_time(schedule.refreshed_at) }
                         { " from " }
                         <a class="link-secondary" href={ schedule.source_url.clone() } target="_blank">
                             { "original schedule" }
@@ -291,21 +291,21 @@ impl FormModel {
             let orig_date_input = e.target_unchecked_into::<HtmlInputElement>().value();
             let trimmed_date_input = orig_date_input.trim();
             if trimmed_date_input.is_empty() {
-                date_input_state.set(DateInputState { input: today.to_string(), value: Ok(today) });
+                date_input_state.set(DateInputState { input: format_iso8601_date(today), value: Ok(today) });
                 history
                     .push_with_query(
                         Route::Sailings,
                         SailingsQuery { from: Some(terminal_pair.from), to: Some(terminal_pair.to), date: None },
                     )
                     .unwrap();
-            } else if let Ok(date) = trimmed_date_input.parse::<NaiveDate>() {
+            } else if let Ok(date) = parse_iso8601_date(trimmed_date_input) {
                 if date < today {
                     date_input_state.set(DateInputState {
-                        input: orig_date_input.to_string(),
+                        input: orig_date_input.to_owned(),
                         value: Err("Date may not be in the past."),
                     });
                 } else {
-                    date_input_state.set(DateInputState { input: date.to_string(), value: Ok(date) });
+                    date_input_state.set(DateInputState { input: format_iso8601_date(date), value: Ok(date) });
                     history
                         .push_with_query(
                             Route::Sailings,
@@ -319,21 +319,21 @@ impl FormModel {
                 }
             } else {
                 date_input_state.set(DateInputState {
-                    input: orig_date_input.to_string(),
+                    input: orig_date_input.to_owned(),
                     value: Err("Date format must be YYYY-MM-DD."),
                 });
             }
         })
     }
 
-    fn onclick_adjust_date_button_callback(&self, opt_new_date: Option<NaiveDate>) -> Callback<MouseEvent> {
+    fn onclick_adjust_date_button_callback(&self, opt_new_date: Option<Date>) -> Callback<MouseEvent> {
         let date_input_state = self.date_input_state.clone();
         let history = self.history.clone();
         let terminal_pair = self.terminal_pair;
         let today = self.today;
         let new_date = opt_new_date.unwrap_or(today);
         Callback::once(move |_| {
-            date_input_state.set(DateInputState { input: new_date.to_string(), value: Ok(new_date) });
+            date_input_state.set(DateInputState { input: format_iso8601_date(new_date), value: Ok(new_date) });
             history
                 .push_with_query(
                     Route::Sailings,
@@ -391,15 +391,15 @@ impl FormModel {
                             placeholder="YYYY-MM-DD"
                             required={ true }
                             class={ classes!("form-control", "align-self-center", "date-input", self.date_input_state.value.is_err().then(|| "is-invalid")) }
-                            value={ self.date_input_state.input.to_string() }
-                            min={ self.today.to_string() }
-                            max={ self.max_date.to_string() }
+                            value={ self.date_input_state.input.to_owned() }
+                            min={ format_iso8601_date(self.today) }
+                            max={ format_iso8601_date(self.max_date) }
                             onchange={ self.onchange_date_input_callback() }/>
                         <button
                             type="button"
                             class="btn btn-outline-secondary border-0 pe-0"
                             title="Next Date"
-                            onclick={ self.onclick_adjust_date_button_callback(Some(max(self.view_date.pred(), self.today))) }
+                            onclick={ self.onclick_adjust_date_button_callback(Some(max(self.view_date.previous_day().unwrap(), self.today))) }
                             disabled={ self.date_input_state.value.as_ref().map(|d| *d <= self.today).unwrap_or(true) }
                         >
                             <i class="bi bi-caret-left-fill"/>
@@ -408,7 +408,7 @@ impl FormModel {
                             type="button"
                             class="btn btn-outline-secondary border-0 ps-0"
                             title="Previous Date"
-                            onclick={ self.onclick_adjust_date_button_callback(Some(min(self.view_date.succ(), self.max_date))) }
+                            onclick={ self.onclick_adjust_date_button_callback(Some(min(self.view_date.next_day().unwrap(), self.max_date))) }
                             disabled={ self.date_input_state.value.as_ref().map(|d| *d >= self.max_date).unwrap_or(true) }
                         >
                             <i class="bi bi-caret-right-fill"/>
@@ -442,7 +442,7 @@ impl FormModel {
 pub fn sailings_component(props: &SailingsProps) -> Html {
     let terminal_pair = TerminalCodePair { from: props.terminal_pair.from, to: props.terminal_pair.to };
     let query_date = props.date;
-    let today = today_pacific();
+    let today = today_vancouver();
     let query_date_or_today = match query_date {
         None => today,
         Some(date) if date < today => today,
@@ -450,8 +450,10 @@ pub fn sailings_component(props: &SailingsProps) -> Html {
     };
     let history = use_history().unwrap();
     let schedules_state = use_context::<SchedulesState>().unwrap();
-    let date_input_state =
-        use_state(|| DateInputState { input: query_date_or_today.to_string(), value: Ok(query_date_or_today) });
+    let date_input_state = use_state(|| DateInputState {
+        input: format_iso8601_date(query_date_or_today),
+        value: Ok(query_date_or_today),
+    });
     let sailings_model = SailingsModel::new(&schedules_state, &date_input_state, terminal_pair, query_date_or_today);
     let form_model = FormModel {
         history,

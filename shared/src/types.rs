@@ -1,5 +1,6 @@
 use crate::imports::*;
-use crate::utils::*;
+
+pub type TimeFormat = [time::format_description::FormatItem<'static>];
 
 #[derive(
     Copy, Clone, Debug, Deserialize, Display, EnumString, Eq, EnumIter, Hash, Ord, PartialEq, PartialOrd, Serialize,
@@ -35,22 +36,27 @@ pub struct Stop {
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Sailing {
-    pub depart_time: NaiveTime,
-    pub arrive_time: NaiveTime,
+    pub depart_time: Time,
+    pub arrive_time: Time,
     pub stops: Vec<Stop>,
+}
+
+#[derive(Clone, Debug)]
+struct DateDaysIterator {
+    date: Option<Date>,
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct DateRange {
-    pub from: NaiveDate,
-    pub to: NaiveDate,
+    pub from: Date,
+    pub to: Date,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum DateRestriction {
     All,
-    Only(HashSet<NaiveDate>),
-    Except(HashSet<NaiveDate>),
+    Only(HashSet<Date>),
+    Except(HashSet<Date>),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -68,7 +74,7 @@ pub struct Schedule {
     pub date_range: DateRange,
     pub items: Vec<ScheduleItem>,
     pub source_url: String,
-    pub refreshed_at: DateTime<Utc>,
+    pub refreshed_at: OffsetDateTime,
 }
 
 impl TerminalCode {
@@ -169,51 +175,72 @@ impl Sailing {
     }
 }
 
+impl DateDaysIterator {
+    pub fn new(date: Date) -> DateDaysIterator {
+        DateDaysIterator { date: Some(date) }
+    }
+}
+
+impl Iterator for DateDaysIterator {
+    type Item = Date;
+    fn next(&mut self) -> Option<Date> {
+        let result = self.date;
+        self.date = self.date.and_then(Date::next_day);
+        result
+    }
+}
+
 impl DateRange {
-    pub fn iter_days(&self) -> impl Iterator<Item = NaiveDate> + '_ {
-        self.from.iter_days().take_while(|d| d <= &self.to)
+    pub fn iter_days(&self) -> impl Iterator<Item = Date> + '_ {
+        DateDaysIterator::new(self.from).take_while(|d| d <= &self.to)
     }
 
-    pub fn includes_date_inclusive(&self, date: NaiveDate) -> bool {
+    pub fn includes_date_inclusive(&self, date: Date) -> bool {
         date >= self.from && date <= self.to
     }
 
-    pub fn make_year_within(&self, orig_date: NaiveDate) -> Result<NaiveDate> {
-        let fixed_date = if orig_date < self.from {
-            let from_date = date(self.from.year(), orig_date.month(), orig_date.day());
-            if from_date < self.from {
-                date(self.from.year() + 1, from_date.month(), from_date.day())
+    pub fn make_year_within(&self, orig_date: Date) -> Result<Date> {
+        const ERROR_DATE_FORMAT: &TimeFormat = format_description!("[month repr:short] [day padding:none]");
+        let inner = || {
+            let fixed_date = if orig_date < self.from {
+                let from_date = Date::from_calendar_date(self.from.year(), orig_date.month(), orig_date.day())?;
+                if from_date < self.from {
+                    Date::from_calendar_date(self.from.year() + 1, from_date.month(), from_date.day())?
+                } else {
+                    from_date
+                }
+            } else if orig_date > self.to {
+                let to_date = Date::from_calendar_date(self.to.year(), orig_date.month(), orig_date.day())?;
+                if to_date > self.to {
+                    Date::from_calendar_date(self.to.year() - 1, to_date.month(), to_date.day())?
+                } else {
+                    to_date
+                }
             } else {
-                from_date
-            }
-        } else if orig_date > self.to {
-            let to_date = date(self.to.year(), orig_date.month(), orig_date.day());
-            if to_date > self.to {
-                date(self.to.year() - 1, to_date.month(), to_date.day())
-            } else {
-                to_date
-            }
-        } else {
-            orig_date
+                orig_date
+            };
+            ensure!(
+                self.includes_date_inclusive(fixed_date),
+                "{} is not within date range {}",
+                fixed_date.format(ERROR_DATE_FORMAT).unwrap(),
+                self,
+            );
+            Ok(fixed_date)
         };
-        ensure!(
-            self.includes_date_inclusive(fixed_date),
-            "{} is not within date range {}",
-            fixed_date.format("%b %d"),
-            self,
-        );
-        Ok(fixed_date)
+        inner().with_context(|| {
+            format!("Failed to make date {} within range {}", orig_date.format(ERROR_DATE_FORMAT).unwrap(), self)
+        })
     }
 
-    pub fn parse(text: &str, date_format: &str, separator: &str) -> Result<DateRange> {
+    pub fn parse(text: &str, date_format: &TimeFormat, separator: &str) -> Result<DateRange> {
         let inner = || {
             let parts: Vec<_> = text.split(separator).collect();
             if parts.len() != 2 {
-                bail!("Expect exactly two parts (expect separator separator {:?})", separator);
+                bail!("Expect exactly two parts (expect separator {:?})", separator);
             }
-            let from = NaiveDate::parse_from_str(parts[0], date_format)
+            let from = Date::parse(parts[0], date_format)
                 .context(format!("Invalid first part (expect date format {:?}): {:?}", date_format, parts[0]))?;
-            let to = NaiveDate::parse_from_str(parts[1], date_format)
+            let to = Date::parse(parts[1], date_format)
                 .context(format!("Invalid second part (expect date format {:?}): {:?}", date_format, parts[1]))?;
             Ok(DateRange { from, to })
         };
@@ -228,7 +255,7 @@ impl fmt::Display for DateRange {
 }
 
 impl DateRestriction {
-    pub fn includes_date(&self, date: NaiveDate) -> bool {
+    pub fn includes_date(&self, date: Date) -> bool {
         match self {
             DateRestriction::All => true,
             DateRestriction::Except(dates) => !dates.contains(&date),
@@ -297,14 +324,40 @@ mod tests {
 
     #[test]
     fn test_date_range_make_year_within() -> Result<()> {
-        let range = DateRange { from: date(2021, 10, 1), to: date(2022, 3, 31) };
-        assert_eq!(range.make_year_within(date(2021, 3, 31))?, date(2022, 3, 31));
-        assert_eq!(range.make_year_within(date(2022, 10, 1))?, date(2021, 10, 1));
-        assert_eq!(range.make_year_within(date(2021, 2, 12))?, date(2022, 2, 12));
-        assert_eq!(range.make_year_within(date(2022, 11, 23))?, date(2021, 11, 23));
-        assert!(range.make_year_within(date(2022, 4, 1)).is_err());
-        assert!(range.make_year_within(date(2021, 9, 30)).is_err());
-        assert!(range.make_year_within(date(2021, 7, 15)).is_err());
+        let range = DateRange { from: date!(2021 - 10 - 1), to: date!(2022 - 03 - 31) };
+        assert_eq!(range.make_year_within(date!(2021 - 03 - 31))?, date!(2022 - 03 - 31));
+        assert_eq!(range.make_year_within(date!(2022 - 10 - 1))?, date!(2021 - 10 - 1));
+        assert_eq!(range.make_year_within(date!(2021 - 02 - 12))?, date!(2022 - 02 - 12));
+        assert_eq!(range.make_year_within(date!(2022 - 11 - 23))?, date!(2021 - 11 - 23));
+        assert!(range.make_year_within(date!(2022 - 04 - 1)).is_err());
+        assert!(range.make_year_within(date!(2021 - 09 - 30)).is_err());
+        assert!(range.make_year_within(date!(2021 - 07 - 15)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_date_range_parse() -> Result<()> {
+        assert_eq!(
+            DateRange::parse(
+                "March 31, 2021 - October 1, 2021",
+                format_description!("[month repr:long case_sensitive:false] [day padding:none], [year]"),
+                " - "
+            )?,
+            DateRange { from: date!(2021 - 03 - 31), to: date!(2021 - 10 - 01) }
+        );
+        assert_eq!(
+            DateRange::parse("20210331-20211001", format_description!("[year][month][day]"), "-")?,
+            DateRange { from: date!(2021 - 03 - 31), to: date!(2021 - 10 - 01) }
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_date_range_iter_days() -> Result<()> {
+        assert_eq!(
+            DateRange { from: date!(2021 - 03 - 30), to: date!(2021 - 04 - 01) }.iter_days().collect::<Vec<_>>(),
+            vec![date!(2021 - 03 - 30), date!(2021 - 03 - 31), date!(2021 - 04 - 01)]
+        );
         Ok(())
     }
 }

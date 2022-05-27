@@ -10,7 +10,7 @@ pub struct SailingWithNotes {
     pub notes: Vec<String>,
 }
 
-fn schedule_sailings_for_date(schedule: &Schedule, date: NaiveDate) -> Vec<SailingWithNotes> {
+fn schedule_sailings_for_date(schedule: &Schedule, date: Date) -> Vec<SailingWithNotes> {
     let mut sailings = Vec::new();
     for item in &schedule.items {
         if let Some(weekday_dr) = item.weekdays.get(&date.weekday()) {
@@ -28,7 +28,7 @@ fn schedule_sailings_for_date(schedule: &Schedule, date: NaiveDate) -> Vec<Saili
     sailings
 }
 
-fn schedules_sailings_for_date(schedules: &[Schedule], date: NaiveDate) -> Option<(&Schedule, Vec<SailingWithNotes>)> {
+fn schedules_sailings_for_date(schedules: &[Schedule], date: Date) -> Option<(&Schedule, Vec<SailingWithNotes>)> {
     schedules
         .iter()
         .filter(|sched| sched.date_range.includes_date_inclusive(date))
@@ -100,7 +100,7 @@ fn select_thrufare_sailings(
 
 fn get_thrufare_sailings(
     terminal_pair: TerminalCodePair,
-    date: NaiveDate,
+    date: Date,
     schedules_map: &HashMap<TerminalCodePair, Vec<Schedule>>,
 ) -> Vec<SailingWithNotes> {
     if let (Some((_, to_swb_sailings)), Some((_, from_swb_sailings))) = (
@@ -119,7 +119,7 @@ fn get_thrufare_sailings(
 
 pub fn sailings_for_date(
     terminal_pair: TerminalCodePair,
-    date: NaiveDate,
+    date: Date,
     schedules_map: &HashMap<TerminalCodePair, Vec<Schedule>>,
 ) -> Option<(&Schedule, Vec<SailingWithNotes>)> {
     if let Some((schedule, mut sailings)) =

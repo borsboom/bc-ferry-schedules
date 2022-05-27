@@ -192,7 +192,7 @@ async fn fetch_json<T: DeserializeOwned>(url: &str) -> Result<T> {
 fn load_schedules_state(schedules_state: UseStateHandle<SchedulesState>) {
     schedules_state.set(SchedulesState::Loading);
     wasm_bindgen_futures::spawn_local(async move {
-        match fetch_json::<Vec<Schedule>>("/v1/schedules.json").await {
+        match fetch_json::<Vec<Schedule>>("/data/schedules.json").await {
             Ok(schedules) => {
                 let terminal_pair_schedules_map = into_group_map(schedules, |s| (s.terminal_pair, s));
                 schedules_state.set(SchedulesState::Loaded(Rc::new(terminal_pair_schedules_map)));

@@ -3,7 +3,12 @@ use crate::types::*;
 
 static S3_CACHE_MAX_AGE: Lazy<Duration> = Lazy::new(|| Duration::hours(12));
 
-async fn upload_to_s3(aws_config: &aws_config::Config, bucket: &str, key: &str, schedules: &[Schedule]) -> Result<()> {
+async fn upload_to_s3(
+    aws_config: &aws_types::SdkConfig,
+    bucket: &str,
+    key: &str,
+    schedules: &[Schedule],
+) -> Result<()> {
     info!("Uploading schedules JSON to: s3://{}/{}", bucket, key);
     let s3_client = aws_sdk_s3::Client::new(aws_config);
     s3_client
@@ -12,7 +17,7 @@ async fn upload_to_s3(aws_config: &aws_config::Config, bucket: &str, key: &str, 
         .key(key)
         .content_type("application/json")
         .acl(aws_sdk_s3::model::ObjectCannedAcl::PublicRead)
-        .cache_control(format!("max-age={},public", S3_CACHE_MAX_AGE.num_seconds()))
+        .cache_control(format!("max-age={},public", S3_CACHE_MAX_AGE.whole_seconds()))
         .body(aws_sdk_s3::types::ByteStream::from(serde_json::to_vec(schedules).unwrap()))
         .send()
         .await
@@ -21,7 +26,7 @@ async fn upload_to_s3(aws_config: &aws_config::Config, bucket: &str, key: &str, 
 }
 
 async fn invalidate_cloudfront_distribution(
-    aws_config: &aws_config::Config,
+    aws_config: &aws_types::SdkConfig,
     distribution_id: &str,
     s3_key: &str,
 ) -> Result<()> {
@@ -33,7 +38,7 @@ async fn invalidate_cloudfront_distribution(
         .distribution_id(distribution_id)
         .invalidation_batch(
             aws_sdk_cloudfront::model::InvalidationBatch::builder()
-                .caller_reference(Utc::now().timestamp_millis().to_string())
+                .caller_reference(OffsetDateTime::now_utc().unix_timestamp_nanos().to_string())
                 .paths(aws_sdk_cloudfront::model::Paths::builder().quantity(1).items(path).build())
                 .build(),
         )

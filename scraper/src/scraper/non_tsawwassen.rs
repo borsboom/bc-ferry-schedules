@@ -64,15 +64,19 @@ fn parse_items(
 }
 
 fn parse_date_range(text: &str) -> Result<DateRange> {
-    DateRange::parse(text, "%B %e, %Y", " - ")
-        .with_context(|| format!("Failed to parse schedule HTML date range: {:?}", text))
+    DateRange::parse(
+        text,
+        format_description!("[month repr:long case_sensitive:false] [day padding:none], [year]"),
+        " - ",
+    )
+    .with_context(|| format!("Failed to parse schedule HTML date range: {:?}", text))
 }
 
 fn parse_schedule(
     options: &Options,
     terminal_pair: TerminalCodePair,
     date_range_elem: &ElementRef,
-    today: NaiveDate,
+    today: Date,
     source_url: &str,
 ) -> Result<Option<Schedule>> {
     let date_range_text = element_text(date_range_elem);
@@ -100,7 +104,7 @@ fn parse_schedule(
                 date_range,
                 items,
                 source_url: format!("{}#{}", source_url, terminal_pair),
-                refreshed_at: Utc::now(),
+                refreshed_at: OffsetDateTime::now_utc(),
             }))
         } else {
             Ok(None)
@@ -112,7 +116,7 @@ fn parse_schedule(
 pub async fn scrape_non_tsawwassen_schedules(
     options: &Options,
     cache: &Cache<'_>,
-    today: NaiveDate,
+    today: Date,
 ) -> Result<Vec<Schedule>> {
     const SOURCE_URL: &str = "https://www.bcferries.com/routes-fares/schedules/southern-gulf-islands";
     let inner = async {

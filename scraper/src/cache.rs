@@ -57,8 +57,8 @@ impl<'a> Cache<'a> {
             let cache_filename = format!("{}_{}", regex!(r"[^\w\d-]+").replace_all(url, "_"), calculate_hash(&url));
             cache_path.push(&cache_filename);
             if let Ok(cache_metadata) = fs::metadata(&cache_path) {
-                let cache_modified_time: DateTime<Utc> = cache_metadata.modified()?.into();
-                if Utc::now() - cache_modified_time < self.max_cache_age {
+                let cache_modified_time: OffsetDateTime = cache_metadata.modified()?.into();
+                if OffsetDateTime::now_utc() - cache_modified_time < self.max_cache_age {
                     if let Ok((cached_value, _)) = transform(fs::read_to_string(&cache_path)?) {
                         info!("Using cached: {:?}", cache_path);
                         return Ok(cached_value);

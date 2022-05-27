@@ -15,7 +15,7 @@ pub enum Route {
 pub struct SailingsQuery {
     pub from: Option<TerminalCode>,
     pub to: Option<TerminalCode>,
-    pub date: Option<NaiveDate>,
+    pub date: Option<Date>,
 }
 
 impl SailingsQuery {

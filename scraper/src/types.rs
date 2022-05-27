@@ -13,8 +13,8 @@ pub struct Options {
     pub terminals: Option<TerminalCodePair>,
 
     /// Only process schedules whose date range includes this date
-    #[clap(short, long, value_name = "YYYY-MM-DD")]
-    pub date: Option<NaiveDate>,
+    #[clap(short, long, value_name = "YYYY-MM-DD", parse(try_from_str = parse_iso8601_date))]
+    pub date: Option<Date>,
 
     /// Write output schedules JSON to this file
     #[clap(short, long, value_name = "PATH")]

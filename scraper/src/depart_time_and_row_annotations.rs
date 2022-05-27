@@ -4,7 +4,7 @@ use crate::macros::*;
 use crate::utils::*;
 
 pub struct DepartTimeAndRowAnnotations {
-    pub time: NaiveTime,
+    pub time: Time,
     pub row_dates: AnnotationDates,
     pub row_notes: HashMap<Cow<'static, str>, AnnotationDates>,
 }

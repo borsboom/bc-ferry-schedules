@@ -1,6 +1,4 @@
 pub use anyhow::{anyhow, bail, ensure, Context, Result};
-pub use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc, Weekday};
-pub use chrono_tz::{Canada::Pacific, Tz};
 pub use log;
 pub use log::{debug, error, info, warn};
 pub use once_cell::sync::{Lazy, OnceCell};
@@ -17,3 +15,6 @@ pub use std::rc::Rc;
 pub use std::str::FromStr;
 pub use strum::IntoEnumIterator;
 pub use strum_macros::{Display, EnumIter, EnumString};
+pub use time::macros::{date, format_description};
+pub use time::{Date, Duration, Month, OffsetDateTime, Time, Weekday};
+pub use time_tz::{timezones, OffsetDateTimeExt};

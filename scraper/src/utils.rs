@@ -19,16 +19,23 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-pub fn parse_schedule_time(text: &str) -> Result<NaiveTime> {
-    const TIME_FORMAT: &str = "%l:%M %p";
-    const ALT_TIME_FORMAT: &str = "%l;%M %p";
-    if let Ok(time) = NaiveTime::parse_from_str(text, TIME_FORMAT) {
+pub fn parse_schedule_time(text: &str) -> Result<Time> {
+    if let Ok(time) = Time::parse(
+        text,
+        format_description!("[hour repr:12 padding:none]:[minute] [period case:lower case_sensitive:false]"),
+    ) {
+        Ok(time)
+    } else if let Ok(time) = Time::parse(
+        text,
+        format_description!("[hour repr:12 padding:none]:[minute][period case:lower case_sensitive:false]"),
+    ) {
         Ok(time)
     } else {
-        let time = NaiveTime::parse_from_str(text, ALT_TIME_FORMAT).with_context(|| {
-            format!("Invalid schedule time (expect format {:?} or {:?}): {:?}", TIME_FORMAT, ALT_TIME_FORMAT, text)
-        })?;
-        Ok(time)
+        Time::parse(
+            text,
+            format_description!("[hour repr:12 padding:none];[minute] [period case:lower case_sensitive:false]"),
+        )
+        .with_context(|| format!("Invalid schedule time: {:?}", text))
     }
 }
 
@@ -68,11 +75,7 @@ pub fn parse_schedule_stops<T: AsRef<str>, I: IntoIterator<Item = T>>(texts: I) 
         .collect()
 }
 
-pub fn should_scrape_schedule_date(
-    schedule_date_range: DateRange,
-    today: NaiveDate,
-    restrict_date: Option<NaiveDate>,
-) -> bool {
+pub fn should_scrape_schedule_date(schedule_date_range: DateRange, today: Date, restrict_date: Option<Date>) -> bool {
     schedule_date_range.to >= today
         && restrict_date.map(|date| schedule_date_range.includes_date_inclusive(date)).unwrap_or(true)
 }

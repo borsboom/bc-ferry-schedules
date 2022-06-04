@@ -149,7 +149,7 @@ async fn scrape_schedule(
             date_range,
             items,
             source_url: source_url.to_string(),
-            refreshed_at: OffsetDateTime::now_utc(),
+            refreshed_at: now_vancouver(),
         })) as Result<_>
     };
     inner.await.with_context(|| {

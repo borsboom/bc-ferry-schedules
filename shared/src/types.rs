@@ -324,12 +324,12 @@ mod tests {
 
     #[test]
     fn test_date_range_make_year_within() -> Result<()> {
-        let range = DateRange { from: date!(2021 - 10 - 1), to: date!(2022 - 03 - 31) };
+        let range = DateRange { from: date!(2021 - 10 - 01), to: date!(2022 - 03 - 31) };
         assert_eq!(range.make_year_within(date!(2021 - 03 - 31))?, date!(2022 - 03 - 31));
-        assert_eq!(range.make_year_within(date!(2022 - 10 - 1))?, date!(2021 - 10 - 1));
+        assert_eq!(range.make_year_within(date!(2022 - 10 - 01))?, date!(2021 - 10 - 01));
         assert_eq!(range.make_year_within(date!(2021 - 02 - 12))?, date!(2022 - 02 - 12));
         assert_eq!(range.make_year_within(date!(2022 - 11 - 23))?, date!(2021 - 11 - 23));
-        assert!(range.make_year_within(date!(2022 - 04 - 1)).is_err());
+        assert!(range.make_year_within(date!(2022 - 04 - 01)).is_err());
         assert!(range.make_year_within(date!(2021 - 09 - 30)).is_err());
         assert!(range.make_year_within(date!(2021 - 07 - 15)).is_err());
         Ok(())

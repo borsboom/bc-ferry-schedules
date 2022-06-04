@@ -104,7 +104,7 @@ fn parse_schedule(
                 date_range,
                 items,
                 source_url: format!("{}#{}", source_url, terminal_pair),
-                refreshed_at: OffsetDateTime::now_utc(),
+                refreshed_at: now_vancouver(),
             }))
         } else {
             Ok(None)

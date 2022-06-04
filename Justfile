@@ -7,7 +7,7 @@ schedules_key := "data/schedules.json"
 local_schedules_file := "frontend/local/" + schedules_key
 upload_data_args := '--output-s3-bucket "$S3_BUCKET" --output-s3-key ' + quote(schedules_key) + ' --invalidate-cloudfront-distribution-id "$CLOUDFRONT_DISTRIBUTION_ID"'
 
-default:
+help:
     @{{ just_executable() }} --list
 
 check:

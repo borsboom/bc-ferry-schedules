@@ -46,6 +46,7 @@ impl WeekdayDates {
         let inner = || {
             let mut result = WeekdayDates::new();
             let from_year = date_range.from.year();
+            // TODO: generalize these rules (e.g. ` & ` and ` to ` become `, ` and `-`)
             let normalized_text = match orig_text {
                 "Sun & Hol Mon" => "Sun, Hol Mon",
                 "Fri & Apr 14 only" => "Fri, Apr 14",
@@ -71,6 +72,7 @@ impl WeekdayDates {
                 "Mon-Thu & Hol Mon" => "Mon-Thu, Hol Mon",
                 "Mon-Thu* & Hol Mon" => "Mon-Thu*, Hol Mon",
                 "Mon-Thu, Sun & Hol Mon" => "Mon-Thu, Sun, Hol Mon",
+                "Fri & Sun" => "Fri, Sun",
                 text => text,
             };
             for split_text in normalized_text.split(',').map(|s| s.trim().to_lowercase()) {

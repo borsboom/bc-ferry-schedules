@@ -20,23 +20,18 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 }
 
 pub fn parse_schedule_time(text: &str) -> Result<Time> {
-    if let Ok(time) = Time::parse(
-        text,
+    const SCHEDULE_TIME_FORMATS: &[&TimeFormat] = &[
         format_description!("[hour repr:12 padding:none]:[minute] [period case:lower case_sensitive:false]"),
-    ) {
-        Ok(time)
-    } else if let Ok(time) = Time::parse(
-        text,
         format_description!("[hour repr:12 padding:none]:[minute][period case:lower case_sensitive:false]"),
-    ) {
-        Ok(time)
-    } else {
-        Time::parse(
-            text,
-            format_description!("[hour repr:12 padding:none];[minute] [period case:lower case_sensitive:false]"),
-        )
-        .with_context(|| format!("Invalid schedule time: {:?}", text))
+        format_description!("[hour repr:12 padding:none];[minute] [period case:lower case_sensitive:false]"),
+        format_description!("[hour repr:12 padding:none].[minute] [period case:lower case_sensitive:false]"),
+    ];
+    for format in SCHEDULE_TIME_FORMATS {
+        if let Ok(time) = Time::parse(text, format) {
+            return Ok(time);
+        }
     }
+    bail!("Invalid schedule time: {:?}", text);
 }
 
 fn terminal_code_from_schedule_stop_text(stop_text: &str) -> Result<TerminalCode> {

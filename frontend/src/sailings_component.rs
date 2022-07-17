@@ -221,15 +221,15 @@ impl<'a> SailingsModel<'a> {
             .source_schedule
             .map(|s| s.source_url.clone())
             .unwrap_or_else(|| DEFAULT_SCHEDULE_SOURCE_URL.to_string());
-        let (current_conditions_url, service_notices_url) = self.source_schedule.and_then(|schedule| {
+        let (sailing_status_url, departures_url, service_notices_url) = self.source_schedule.and_then(|schedule| {
             if schedule.terminal_pair.includes_terminal(TerminalCode::SWB) {
-                Some(("https://www.bcferries.com/current-conditions/SWB-SGI", "https://www.bcferries.com/current-conditions/service-notices#Vancouver%20Island%20-%20Southern%20Gulf%20Islands"))
+                Some(("https://www.bcferries.com/current-conditions/SWB-SGI", "https://www.bcferries.com/current-conditions/departures?terminalCode=SWB", "https://www.bcferries.com/current-conditions/service-notices#Vancouver%20Island%20-%20Southern%20Gulf%20Islands"))
             } else if schedule.terminal_pair.includes_terminal(TerminalCode::TSA) {
-                Some(("https://www.bcferries.com/current-conditions/TSA-SGI", "https://www.bcferries.com/current-conditions/service-notices#Metro%20Vancouver%20-%20Southern%20Gulf%20Islands"))
+                Some(("https://www.bcferries.com/current-conditions/TSA-SGI", "https://www.bcferries.com/current-conditions/departures?terminalCode=TSA", "https://www.bcferries.com/current-conditions/service-notices#Metro%20Vancouver%20-%20Southern%20Gulf%20Islands"))
             } else {
                 None
             }
-        }).unwrap_or(("https://www.bcferries.com/current-conditions", "https://www.bcferries.com/current-conditions/service-notices"));
+        }).unwrap_or(("https://www.bcferries.com/current-conditions", "https://www.bcferries.com/current-conditions/departures", "https://www.bcferries.com/current-conditions/service-notices"));
         html! { <>
             <div class="row mt-4">
                 <div class="col-12 col-md-8 col-lg-6">
@@ -266,9 +266,13 @@ impl<'a> SailingsModel<'a> {
                         <a class="link-secondary" href={ service_notices_url } target="_blank">
                             { "service notices" }
                         </a>
+                        { ", " }
+                        <a class="link-secondary" href={ departures_url } target="_blank">
+                            { "departures" }
+                        </a>
                         { " and " }
-                        <a class="link-secondary" href={ current_conditions_url } target="_blank">
-                            { "current conditions" }
+                        <a class="link-secondary" href={ sailing_status_url } target="_blank">
+                            { "sailing status" }
                         </a>
                         { " before you depart." }
                         { " If you find a mistake, send feedback to " }

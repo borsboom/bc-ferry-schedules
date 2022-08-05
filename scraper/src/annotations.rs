@@ -166,20 +166,6 @@ impl Annotations {
                     match annotation_text {
                         "!" => next_annotation_is_exclamation = true,
                         "No sailings available on this route for these dates" => {}
-                        "* On December 27, 2021, January 3 & February 21, 2022 the Holiday Monday schedule is in effect" |
-                        "* On December 27, 2021, January 3 and February 21, 2022 the Holiday Monday schedule is in effect" =>
-                            self.star_holiday_monday_extend(&[
-                                date!(2021 - 12 - 27),
-                                date!(2022 - 1 - 3),
-                                date!(2022 - 2 - 21),
-                            ]),
-                        "* On December 27, 2021, January 3, February 21 & April 18, 2022 the Holiday Monday schedule is in effect" =>
-                            self.star_holiday_monday_extend(&[
-                                date!(2021 - 12 - 27),
-                                date!(2022 - 1 - 3),
-                                date!(2022 - 2 - 21),
-                                date!(2022 - 4 - 18),
-                            ]),
                         "* On April 18, 2022 the Holiday Monday Schedule is in effect" |
                         "* On April 18, 2022, the Monday schedule is in effect until 2:00 pm, the Holiday Monday Schedule is in effect after 2:00 pm" =>
                             self.star_holiday_monday_extend(&[
@@ -195,17 +181,6 @@ impl Annotations {
                             self.star_holiday_monday_extend(&[
                                 schedule_year_date(Month::May, 23)?,
                             ]),
-                        "** Except on December 25, 2021 & January 1, 2022" =>
-                            self.star2.except.extend([
-                                date!(2021 - 12 - 25),
-                                date!(2022 - 1 - 1),
-                            ]),
-                        "* Except On December 27, 2021, January 3 & February 21, 2022" =>
-                            self.star.except.extend([
-                                date!(2021 - 12 - 27),
-                                date!(2022 - 1 - 3),
-                                date!(2022 - 2 - 21),
-                            ]),
                         "* Except On December 26, 2022, January 2 & February 20, 2023" =>
                             self.star.except.extend([
                                 date!(2022 - 12 - 26),
@@ -216,6 +191,11 @@ impl Annotations {
                             self.star.except.extend([
                                 date!(2022 - 8 - 1),
                                 date!(2022 - 9 - 5),
+                            ]),
+                        "* Except Aug 1 & Sep 5" =>
+                            self.star.except.extend([
+                                schedule_year_date(Month::August, 1)?,
+                                schedule_year_date(Month::September, 5)?,
                             ]),
                         "* Except on October 10, 2022" =>
                             self.star.except.extend([

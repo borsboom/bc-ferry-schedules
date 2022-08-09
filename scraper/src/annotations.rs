@@ -131,7 +131,7 @@ impl Annotations {
             let mut inner = || {
                 let mut next_annotation_is_exclamation = false;
                 if let Some(captures) =
-                    regex!(r"\*(\d+:\d+ [AP]M) (Not Available|Only) on: (.*)\*").captures(annotation_text.as_ref())
+                    regex!(r"(?i)\*(\d+:\d+ [AP]M) (Not Available|Only) on: (.*)\*").captures(annotation_text.as_ref())
                 {
                     let time_text = &captures[1];
                     let time = Time::parse(

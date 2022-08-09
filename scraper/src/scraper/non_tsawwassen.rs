@@ -143,6 +143,7 @@ pub async fn scrape_non_tsawwassen_schedules(
                 schedules.extend(opt_schedule);
             }
         }
+        ensure!(!schedules.is_empty(), "Failed to find any schedule elements");
         Ok(schedules) as Result<_>
     };
     inner.await.with_context(|| format!("Failed to scrape non-Tsawwassen schedules from: {:?}", SOURCE_URL))

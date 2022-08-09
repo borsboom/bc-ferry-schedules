@@ -11,14 +11,14 @@ pub struct DepartTimeAndRowAnnotations {
 
 impl DepartTimeAndRowAnnotations {
     pub fn parse(orig_text: &str, annotations: &Annotations) -> Result<DepartTimeAndRowAnnotations> {
-        let star_suffix_re: &Regex = regex!(r"(M) ?\*$");
-        let star2_suffix_re: &Regex = regex!(r"(M) ?\*\*$");
-        let exclamation_suffix_re: &Regex = regex!(r"(M) ?!$");
-        let hash_suffix_re: &Regex = regex!(r"(M) ?#$");
-        let plus_suffix_re: &Regex = regex!(r"(M) ?\+$");
-        let exclamation2_suffix_re: &Regex = regex!(r"(M) ?!!$");
-        let exclamation_plus_suffix_re: &Regex = regex!(r"(M) ?! ?\+$");
-        let exclamation_hash_suffix_re: &Regex = regex!(r"(M) ?! ?#$");
+        let star_suffix_re: &Regex = regex!(r"(?i)(M) ?\*$");
+        let star2_suffix_re: &Regex = regex!(r"(?i)(M) ?\*\*$");
+        let exclamation_suffix_re: &Regex = regex!(r"(?i)(M) ?!$");
+        let hash_suffix_re: &Regex = regex!(r"(?i)(M) ?#$");
+        let plus_suffix_re: &Regex = regex!(r"(?i)(M) ?\+$");
+        let exclamation2_suffix_re: &Regex = regex!(r"(?i)(M) ?!!$");
+        let exclamation_plus_suffix_re: &Regex = regex!(r"(?i)(M) ?! ?\+$");
+        let exclamation_hash_suffix_re: &Regex = regex!(r"(?i)(M) ?! ?#$");
         let mut row_dates = AnnotationDates::new();
         let mut row_dates_by_time = HashMap::new();
         let mut row_notes = HashMap::new();

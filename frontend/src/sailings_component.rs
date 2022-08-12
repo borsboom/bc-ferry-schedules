@@ -3,8 +3,6 @@ use crate::sailings_processor::*;
 use crate::types::*;
 use crate::utils::*;
 
-const DEFAULT_SCHEDULE_SOURCE_URL: &str = "https://www.bcferries.com/routes-fares/schedules";
-
 #[derive(Properties, PartialEq)]
 pub struct SailingsProps {
     pub terminal_pair: TerminalCodePair,
@@ -41,6 +39,12 @@ struct FormModel {
     today: Date,
     view_date: Date,
     max_date: Date,
+}
+
+struct InformationUrlsModel<'a> {
+    sailing_status_url: &'a str,
+    departures_url: &'a str,
+    service_notices_url: &'a str,
 }
 
 fn stop_html(stop: &Stop) -> Html {
@@ -217,19 +221,32 @@ impl<'a> SailingsModel<'a> {
     }
 
     fn html(self) -> Html {
-        let source_url = self
+        let source_url =
+            self.source_schedule.map(|s| s.source_url.clone()).unwrap_or_else(|| ALL_SCHEDULES_URL.to_string());
+        let info_urls = self
             .source_schedule
-            .map(|s| s.source_url.clone())
-            .unwrap_or_else(|| DEFAULT_SCHEDULE_SOURCE_URL.to_string());
-        let (sailing_status_url, departures_url, service_notices_url) = self.source_schedule.and_then(|schedule| {
-            if schedule.terminal_pair.includes_terminal(TerminalCode::SWB) {
-                Some(("https://www.bcferries.com/current-conditions/SWB-SGI", "https://www.bcferries.com/current-conditions/departures?terminalCode=SWB", "https://www.bcferries.com/current-conditions/service-notices#Vancouver%20Island%20-%20Southern%20Gulf%20Islands"))
-            } else if schedule.terminal_pair.includes_terminal(TerminalCode::TSA) {
-                Some(("https://www.bcferries.com/current-conditions/TSA-SGI", "https://www.bcferries.com/current-conditions/departures?terminalCode=TSA", "https://www.bcferries.com/current-conditions/service-notices#Metro%20Vancouver%20-%20Southern%20Gulf%20Islands"))
-            } else {
-                None
-            }
-        }).unwrap_or(("https://www.bcferries.com/current-conditions", "https://www.bcferries.com/current-conditions/departures", "https://www.bcferries.com/current-conditions/service-notices"));
+            .and_then(|schedule| {
+                if schedule.terminal_pair.includes_terminal(TerminalCode::SWB) {
+                    Some(InformationUrlsModel {
+                        sailing_status_url: SWB_SGI_SAILING_STATUS_URL,
+                        departures_url: SWB_DEPARTURES_URL,
+                        service_notices_url: SWB_SGI_SERVICE_NOTICES_URL,
+                    })
+                } else if schedule.terminal_pair.includes_terminal(TerminalCode::TSA) {
+                    Some(InformationUrlsModel {
+                        sailing_status_url: TSA_SGI_SAILING_STATUS_URL,
+                        departures_url: TSA_DEPARTURES_URL,
+                        service_notices_url: TSA_SGI_SERVICE_NOTICES_URL,
+                    })
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(InformationUrlsModel {
+                sailing_status_url: ALL_SAILING_STATUS_URL,
+                departures_url: ALL_DEPARTURES_URL,
+                service_notices_url: ALL_SERVICE_NOTICES_URL,
+            });
         html! { <>
             <div class="row mt-4">
                 <div class="col-12 col-md-8 col-lg-6">
@@ -240,13 +257,13 @@ impl<'a> SailingsModel<'a> {
                 <div class="mt-3">
                     <small>
                         <span class="text-nowrap">
-                            <a href="https://www.bcferries.com/" target="_blank">{ "Reservations" }</a>
+                            <a href={ BCFERRIES_HOME_URL } target="_blank">{ "Reservations" }</a>
                             { " are recommended for direct sailings." }
                         </span>
                         { " " }
                         <span class="text-nowrap">
                             { "See here for more " }
-                            <a href="https://www.bcferries.com/routes-fares/ferry-fares/thru-fare" target="_blank">{ "information about thru-fares" }</a>
+                            <a href={ THRU_FARE_INFORMATION_URL } target="_blank">{ "information about thru-fares" }</a>
                             { "." }
                         </span>
                     </small>
@@ -263,15 +280,15 @@ impl<'a> SailingsModel<'a> {
                             { "original schedule" }
                         </a>
                         { ", and check " }
-                        <a class="link-secondary" href={ service_notices_url } target="_blank">
+                        <a class="link-secondary" href={ info_urls.service_notices_url } target="_blank">
                             { "service notices" }
                         </a>
                         { ", " }
-                        <a class="link-secondary" href={ departures_url } target="_blank">
+                        <a class="link-secondary" href={ info_urls.departures_url } target="_blank">
                             { "departures" }
                         </a>
                         { " and " }
-                        <a class="link-secondary" href={ sailing_status_url } target="_blank">
+                        <a class="link-secondary" href={ info_urls.sailing_status_url } target="_blank">
                             { "sailing status" }
                         </a>
                         { " before you depart." }

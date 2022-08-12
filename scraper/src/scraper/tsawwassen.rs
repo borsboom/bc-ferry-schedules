@@ -117,25 +117,25 @@ fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<Sch
     inner().context("Failed to parse Tsawwassen schedule table")
 }
 
-fn parse_date_range_from_schedule_query(schedule_query: &str) -> Result<DateRange> {
+fn parse_date_range_from_schedule_path_query(schedule_path_query: &str) -> Result<DateRange> {
     let text = &regex!("departureDate=([0-9-]*)")
-        .captures(schedule_query)
-        .ok_or_else(|| anyhow!("Failed to find departureDate in schedule query: {:?}", schedule_query))?[1];
+        .captures(schedule_path_query)
+        .ok_or_else(|| anyhow!("Failed to find departureDate in schedule path/query: {:?}", schedule_path_query))?[1];
     DateRange::parse(text, format_description!("[year][month][day]"), "-")
-        .with_context(|| format!("Failed to parse schedule query date range: {:?}", text))
+        .with_context(|| format!("Failed to parse schedule path/query date range: {:?}", text))
 }
 
 async fn scrape_schedule(
     options: &Options,
     cache: &Cache<'_>,
     terminal_pair: TerminalCodePair,
-    schedule_query: &str,
+    schedule_path_query: &str,
     today: Date,
 ) -> Result<Option<Schedule>> {
-    let source_url = format!("https://www.bcferries.com/{}", schedule_query);
+    let source_url = format!("{}{}", BCFERRIES_BASE_URL, schedule_path_query);
     let inner = async {
-        let date_range = parse_date_range_from_schedule_query(schedule_query)
-            .with_context(|| format!("Failed to parse date from schedule query: {:?}", schedule_query))?;
+        let date_range = parse_date_range_from_schedule_path_query(schedule_path_query)
+            .with_context(|| format!("Failed to parse date from schedule path/query: {:?}", schedule_path_query))?;
         if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
         }
@@ -171,20 +171,19 @@ pub async fn scrape_tsawwassen_schedules(
     if options.terminals.is_some() && options.terminals != Some(terminal_pair) {
         return Ok(vec![]);
     }
-    let base_url =
-        format!("https://www.bcferries.com/routes-fares/schedules/seasonal/{}", terminal_pair.to_schedule_code_pair());
+    let base_url = format!("{}/{}", SEASONAL_SCHEDULES_BASE_URL, terminal_pair.to_schedule_code_pair());
     let inner = async {
         let base_document = cache
             .get_html(&base_url, &HTML_ERROR_REGEX)
             .await
             .with_context(|| format!("Failed to download base schedule HTML from: {:?}", base_url))?;
-        let schedule_query_elems = base_document.select(selector!("div#dateRangeModal a"));
+        let schedule_path_query_elems = base_document.select(selector!("div#dateRangeModal a"));
         let mut schedules = Vec::new();
-        for schedule_query_elem in schedule_query_elems {
-            let schedule_query = schedule_query_elem.value().attr("href").ok_or_else(|| {
-                anyhow!("Missing schedule query in date range link element: {}", schedule_query_elem.html())
+        for schedule_path_query_elem in schedule_path_query_elems {
+            let schedule_path_query = schedule_path_query_elem.value().attr("href").ok_or_else(|| {
+                anyhow!("Missing schedule path/query in date range link element: {}", schedule_path_query_elem.html())
             })?;
-            let opt_schedule = scrape_schedule(options, cache, terminal_pair, schedule_query, today).await?;
+            let opt_schedule = scrape_schedule(options, cache, terminal_pair, schedule_path_query, today).await?;
             opt_schedule.iter().for_each(|s| debug!("Parsed schedule: {:#?}", s));
             schedules.extend(opt_schedule);
         }

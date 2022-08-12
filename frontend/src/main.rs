@@ -90,7 +90,7 @@ fn home_html() -> Html {
             <div>
                 { "The schedule data is scraped from BC Ferries' web site and then processed into individual sailings. "}
                 { "This is error prone and the data may be out of date or incorrect. Be sure to double check against the " }
-                <a class="link-dark" href="https://www.bcferries.com/routes-fares/schedules" target="_blank">{ "official schedules" }</a>
+                <a class="link-dark" href={ ALL_SCHEDULES_URL } target="_blank">{ "official schedules" }</a>
                 { "." }
             </div>
         </div>

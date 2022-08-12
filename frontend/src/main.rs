@@ -100,7 +100,7 @@ fn home_html() -> Html {
 #[function_component(SailingsPage)]
 fn sailings_page_component() -> Html {
     let location = use_location();
-    let history = use_history().unwrap();
+    let history = use_history().expect("history to be available");
     let query = location
         .and_then(|l| l.query().map_err(|e| error!("Invalid sailings query: {}", e)).ok())
         .unwrap_or_else(SailingsQuery::new);

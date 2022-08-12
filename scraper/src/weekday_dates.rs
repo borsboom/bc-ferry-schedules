@@ -13,7 +13,7 @@ impl WeekdayDates {
 
     fn day_mut(&mut self, day: Weekday) -> &mut AnnotationDates {
         self.day(day);
-        self.map.get_mut(&day).unwrap()
+        self.map.get_mut(&day).expect("weekday to be in map after inserting")
     }
 
     fn day(&mut self, day: Weekday) {

@@ -89,7 +89,7 @@ fn parse_schedule(
         info!("Parsing schedule for {}, {}", terminal_pair, date_range);
         let table_container_elem = date_range_elem
             .parent_element()
-            .unwrap()
+            .expect("date range element to have parent")
             .next_sibling_element()
             .ok_or_else(|| anyhow!("Expect schedule table container element after schedule date range element"))?;
         let mut table_elems = table_container_elem.select(selector!("div.component-cnrl > table"));
@@ -134,7 +134,9 @@ pub async fn scrape_non_tsawwassen_schedules(
             if options.terminals.is_some() && options.terminals != Some(terminal_pair) {
                 continue;
             }
-            let schedule_container_elem = terminal_pair_description_elem.parent_element().unwrap();
+            let schedule_container_elem = terminal_pair_description_elem
+                .parent_element()
+                .expect("terminal pair description element to have parent");
             let schedule_date_range_elems = schedule_container_elem.select(selector!("header > span.accordion-title"));
             for schedule_date_range_elem in schedule_date_range_elems {
                 let opt_schedule =

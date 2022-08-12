@@ -53,7 +53,8 @@ fn parse_duration(duration_text: &str) -> Result<Duration> {
             .captures(duration_text)
             .ok_or_else(|| anyhow!("Invalid duration format: {:?}", duration_text))?;
         let duration = Duration::minutes(
-            duration_captures[1].parse::<i64>().unwrap() * 60 + duration_captures[2].parse::<i64>().unwrap(),
+            duration_captures[1].parse::<i64>().expect("duration hours to parse to integer") * 60
+                + duration_captures[2].parse::<i64>().expect("duration minutes to parse to integer"),
         );
         Ok(duration) as Result<_>
     };

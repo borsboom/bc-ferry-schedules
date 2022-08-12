@@ -222,13 +222,17 @@ impl DateRange {
             ensure!(
                 self.includes_date_inclusive(fixed_date),
                 "{} is not within date range {}",
-                fixed_date.format(ERROR_DATE_FORMAT).unwrap(),
+                fixed_date.format(ERROR_DATE_FORMAT).expect("date within year to format"),
                 self,
             );
             Ok(fixed_date)
         };
         inner().with_context(|| {
-            format!("Failed to make date {} within range {}", orig_date.format(ERROR_DATE_FORMAT).unwrap(), self)
+            format!(
+                "Failed to make date {} within range {}",
+                orig_date.format(ERROR_DATE_FORMAT).expect("date within year to format"),
+                self
+            )
         })
     }
 
@@ -313,7 +317,7 @@ impl ScheduleItem {
             }
         }
         let mut items: Vec<_> = map.into_values().collect();
-        items.sort_unstable_by(|a, b| a.sailing.depart_time.partial_cmp(&b.sailing.depart_time).unwrap());
+        items.sort_unstable_by(|a, b| a.sailing.depart_time.cmp(&b.sailing.depart_time));
         Ok(items)
     }
 }

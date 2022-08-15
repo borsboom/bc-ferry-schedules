@@ -83,12 +83,9 @@ fn home_html() -> Html {
             <small class="text-muted">{ " for the Southern Gulf Islands" }</small>
         </h1>
         <p class="lead">
-            { "An easy to use and understand presentation of the BC Ferries schedules for Galiano Island, Mayne Island, Pender Islands, Salt Spring Island, Saturna Island, Victoria, and Vancouver. Just select your terminals and date, and you're shown the sailings for that day."}
+            { "An easy to use and understand presentation of the BC Ferries schedules for for the Southern Gulf Islands, Victoria, and Vancouver. Just select your locations and date, and you're shown the sailings for that day."}
         </p>
         { select_from_area_html(&SailingsQuery::new()) }
-        <p>
-            { "These routes are among the most complex and confusing in the system, and even the most seasoned ferry user is prone to mis-reading the original schedules." }
-        </p>
         <div class="p-2 bg-light border rounded">
             <div><strong>{ "Do not rely on this site as your only source of schedule information!" }</strong></div>
             <div>

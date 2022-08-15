@@ -1,9 +1,8 @@
 # B.C. Ferry Schedules for the Southern Gulf Islands
 
-An easy to use and understand presentation of the BC Ferries schedules for
-Galiano Island, Mayne Island, Pender Islands, Salt Spring Island, Saturna
-Island, Victoria, and Vancouver. Just select your terminals and date, and
-you're shown the sailings for that day.
+An easy to use and understand presentation of the BC Ferries schedules for for
+the Southern Gulf Islands, Victoria, and Vancouver. Just select your locations
+and date, and you're shown the sailings for that day.
 
 Web site: https://ferries.borsboom.io/
 

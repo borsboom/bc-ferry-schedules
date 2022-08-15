@@ -10,7 +10,7 @@ pub struct Options {
 
     /// Only process schedules for specified terminal pair
     #[clap(short, long, value_name = "FROM-TO")]
-    pub terminals: Option<TerminalCodePair>,
+    pub terminals: Option<TerminalPair>,
 
     /// Only process schedules whose date range includes this date
     #[clap(short, long, value_name = "YYYY-MM-DD", parse(try_from_str = parse_iso8601_date))]

@@ -74,7 +74,7 @@ fn parse_date_range(text: &str) -> Result<DateRange> {
 
 fn parse_schedule(
     options: &Options,
-    terminal_pair: TerminalCodePair,
+    terminal_pair: TerminalPair,
     date_range_elem: &ElementRef,
     today: Date,
     source_url: &str,
@@ -113,23 +113,26 @@ fn parse_schedule(
     inner().with_context(|| format!("Failed to parse schedule for {}, {}", terminal_pair, date_range_text))
 }
 
-pub async fn scrape_non_tsawwassen_schedules(
-    options: &Options,
-    cache: &Cache<'_>,
-    today: Date,
-) -> Result<Vec<Schedule>> {
+pub async fn scrape_route5_schedules(options: &Options, cache: &Cache<'_>, today: Date) -> Result<Vec<Schedule>> {
     let inner = async {
         let document = cache
-            .get_html(SGI_SCHEDULES_URL, &HTML_ERROR_REGEX)
+            .get_html(ROUTE5_SCHEDULES_URL, &HTML_ERROR_REGEX)
             .await
-            .with_context(|| format!("Failed to download schedule HTML from: {:?}", SGI_SCHEDULES_URL))?;
+            .with_context(|| format!("Failed to download schedule HTML from: {:?}", ROUTE5_SCHEDULES_URL))?;
         let mut schedules = Vec::new();
+        let mut found_terminal_pairs = HashSet::new();
         for terminal_pair_description_elem in document.select(selector!("div.js-accordion > h4")) {
             let terminal_pair_id = terminal_pair_description_elem.value().id().ok_or_else(|| {
                 anyhow!("Terminal pair element missing ID: {}", terminal_pair_description_elem.html())
             })?;
-            let terminal_pair = TerminalCodePair::parse_schedule_code_pair(terminal_pair_id)
+            let terminal_pair = TerminalPair::parse_schedule_code_pair(terminal_pair_id)
                 .with_context(|| format!("Failed to parse terminal pair element ID: {:?}", terminal_pair_id))?;
+            found_terminal_pairs.insert(terminal_pair);
+            ensure!(
+                ROUTE5_TERMINAL_PAIRS.contains(&terminal_pair),
+                "Found terminal pair that should not be in route 5: {}",
+                terminal_pair
+            );
             if options.terminals.is_some() && options.terminals != Some(terminal_pair) {
                 continue;
             }
@@ -139,7 +142,7 @@ pub async fn scrape_non_tsawwassen_schedules(
             let schedule_date_range_elems = schedule_container_elem.select(selector!("header > span.accordion-title"));
             for schedule_date_range_elem in schedule_date_range_elems {
                 let opt_schedule =
-                    parse_schedule(options, terminal_pair, &schedule_date_range_elem, today, SGI_SCHEDULES_URL)?;
+                    parse_schedule(options, terminal_pair, &schedule_date_range_elem, today, ROUTE5_SCHEDULES_URL)?;
                 opt_schedule.iter().for_each(|s| debug!("Parsed schedule: {:#?}", s));
                 schedules.extend(opt_schedule);
             }
@@ -147,5 +150,5 @@ pub async fn scrape_non_tsawwassen_schedules(
         ensure!(!schedules.is_empty(), "Failed to find any schedule elements");
         Ok(schedules) as Result<_>
     };
-    inner.await.with_context(|| format!("Failed to scrape non-Tsawwassen schedules from: {:?}", SGI_SCHEDULES_URL))
+    inner.await.with_context(|| format!("Failed to scrape route 5 schedules from: {:?}", ROUTE5_SCHEDULES_URL))
 }

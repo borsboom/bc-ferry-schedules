@@ -5,7 +5,7 @@ use crate::utils::*;
 
 #[derive(Properties, PartialEq)]
 pub struct SailingsProps {
-    pub terminal_pair: TerminalCodePair,
+    pub area_pair: AreaPair,
     pub date: Option<Date>,
 }
 
@@ -14,19 +14,18 @@ struct DateInputState {
     value: StdResult<Date, &'static str>,
 }
 
-enum SailingsStateModel {
+enum SailingsStateModel<'a> {
     InvalidDate(String),
     LoadingSchedules,
     LoadSchedulesFailed,
     NoSchedule,
     NoSailings,
-    Sailings(Vec<SailingWithNotes>),
+    Sailings(Vec<(&'a Schedule, Vec<SailingWithNotes>)>),
 }
 
 struct SailingsModel<'a> {
-    sailings_state_model: SailingsStateModel,
-    terminal_pair: TerminalCodePair,
-    source_schedule: Option<&'a Schedule>,
+    sailings_state_model: SailingsStateModel<'a>,
+    area_pair: AreaPair,
     view_date: Date,
     max_date: Date,
 }
@@ -34,7 +33,7 @@ struct SailingsModel<'a> {
 struct FormModel {
     history: AnyHistory,
     date_input_state: UseStateHandle<DateInputState>,
-    terminal_pair: TerminalCodePair,
+    area_pair: AreaPair,
     query_date: Option<Date>,
     today: Date,
     view_date: Date,
@@ -56,14 +55,14 @@ fn stop_html(stop: &Stop) -> Html {
             StopType::Thrufare => "Thru-fare",
         }}
         { " " }
-        { stop.terminal.short_location_name() }
+        { stop.terminal.area().short_name() }
         </li>
     }
 }
 
 fn sailing_row_html(sailing: &SailingWithNotes) -> Html {
-    let main_td_class = (!sailing.notes.is_empty()).then(|| "border-bottom-0");
-    let all_td_class = sailing.sailing.is_thrufare().then(|| "text-muted");
+    let main_td_class = (!sailing.notes.is_empty()).then_some("border-bottom-0");
+    let all_td_class = sailing.sailing.is_thrufare().then_some("text-muted");
     html! { <>
         <tr>
             <td class={ classes!(all_td_class, main_td_class) }>{ format_time(sailing.sailing.depart_time) }</td>
@@ -94,17 +93,70 @@ fn sailing_row_html(sailing: &SailingWithNotes) -> Html {
     }</>}
 }
 
+fn schedule_sailings_header_row_html(schedule: &Schedule) -> Html {
+    html! {
+        <tr>
+            <th class="bg-heading">
+                <span class="fw-normal">{ "Depart " }</span>
+                <span class="text-nowrap">{ schedule.terminal_pair.from.name() }</span>
+            </th>
+            <th class="bg-heading">
+                <span class="fw-normal">{ "Arrive " }</span>
+                <span class="text-nowrap">{ schedule.terminal_pair.to.name() }</span>
+            </th>
+            <th class="bg-heading fw-normal">
+                { "Stops" }
+            </th>
+        </tr>
+    }
+}
+
+fn schedule_sailings_rows_html(first: bool, last: bool, schedule: &Schedule, sailings: &[SailingWithNotes]) -> Html {
+    let bottom_class = (!last).then_some("pb-3");
+    html! { <>
+        { if first {
+            html! {
+                <thead class="table-dark">
+                    { schedule_sailings_header_row_html(schedule) }
+                </thead>
+            }
+        } else {
+            html! { <>
+                <tbody class="table-dark">
+                    { schedule_sailings_header_row_html(schedule) }
+                </tbody>
+            </> }
+        }}
+        <tbody>
+            { for sailings.iter().map(sailing_row_html) }
+        </tbody>
+        <tbody>
+            <tr>
+                <td colspan=3 class={classes!("text-end", "text-muted", "d-print-none", "border-bottom-0", "p-0", "bg-transparent", bottom_class)}>
+                    <small>
+                        { "Data updated " }
+                        { human_time(schedule.refreshed_at) }
+                        { " from " }
+                        <a class="link-secondary" href={ schedule.source_url.clone() } target="_blank">
+                            { "original schedule" }
+                        </a>
+                    </small>
+                </td>
+            </tr>
+        </tbody>
+    </> }
+}
+
 impl<'a> SailingsModel<'a> {
     fn new(
         schedules_state: &'a SchedulesState,
         date_input_state: &DateInputState,
-        terminal_pair: TerminalCodePair,
+        area_pair: AreaPair,
         query_date_or_today: Date,
     ) -> SailingsModel<'a> {
         let base = SailingsModel {
             sailings_state_model: SailingsStateModel::NoSailings,
-            terminal_pair,
-            source_schedule: None,
+            area_pair,
             view_date: query_date_or_today,
             max_date: query_date_or_today,
         };
@@ -127,13 +179,19 @@ impl<'a> SailingsModel<'a> {
             (Ok(view_date), SchedulesState::Loaded(schedules_map)) => {
                 let max_date = max(
                     view_date,
-                    schedules_map
-                        .get(&terminal_pair)
-                        .and_then(|schedules| schedules.iter().map(|s| s.date_range.to).max())
+                    AREA_PAIR_TERMINAL_PAIRS
+                        .get(&area_pair)
+                        .and_then(|tps| {
+                            tps.iter()
+                                .flat_map(|tp| {
+                                    schedules_map.get(tp).and_then(|ss| ss.iter().map(|s| s.date_range.to).max())
+                                })
+                                .max()
+                        })
                         .unwrap_or(view_date),
                 );
-                if let Some((schedule, sailings)) = sailings_for_date(terminal_pair, view_date, schedules_map) {
-                    if sailings.is_empty() {
+                if let Some(schedules_sailings) = area_sailings_for_date(area_pair, view_date, schedules_map) {
+                    if schedules_sailings.is_empty() {
                         SailingsModel {
                             sailings_state_model: SailingsStateModel::NoSailings,
                             view_date,
@@ -142,8 +200,7 @@ impl<'a> SailingsModel<'a> {
                         }
                     } else {
                         SailingsModel {
-                            sailings_state_model: SailingsStateModel::Sailings(sailings),
-                            source_schedule: Some(schedule),
+                            sailings_state_model: SailingsStateModel::Sailings(schedules_sailings),
                             view_date,
                             max_date,
                             ..base
@@ -156,37 +213,17 @@ impl<'a> SailingsModel<'a> {
         }
     }
 
-    fn sailings_table_html(&self, sailings: &[SailingWithNotes]) -> Html {
+    fn sailings_table_html(&self, schedule_sailings: &[(&Schedule, Vec<SailingWithNotes>)]) -> Html {
+        let last_schedule_index = schedule_sailings.len() - 1;
         html! { <>
             <div>
                 <h6>{ self.view_date.format(format_description!("[weekday], [day padding:none] [month repr:long], [year]")).expect("friendly date to format") }</h6>
             </div>
             <table class="table table-light mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="bg-heading">{ "Depart " }<span class="text-nowrap">{ self.terminal_pair.from.short_location_name() }</span></th>
-                        <th class="bg-heading">{ "Arrive " }<span class="text-nowrap">{ self.terminal_pair.to.short_location_name() }</span></th>
-                        <th class="bg-heading">{ "Stops" }</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    { for sailings.iter().map(sailing_row_html) }
-                </tbody>
+                { for schedule_sailings.iter().enumerate().map(|(index, (schedule, sailings))|
+                    schedule_sailings_rows_html(index == 0, index == last_schedule_index, schedule, sailings)
+                ) }
             </table>
-            { if let Some(schedule) = self.source_schedule { html! {
-                <div class="d-flex flex-column align-items-end text-muted d-print-none">
-                    <small>
-                        { "Data updated " }
-                        { human_time(schedule.refreshed_at) }
-                        { " from " }
-                        <a class="link-secondary" href={ schedule.source_url.clone() } target="_blank">
-                            { "original schedule" }
-                        </a>
-                    </small>
-                </div>
-            }} else {
-                html! {}
-            }}
         </> }
     }
 
@@ -216,57 +253,64 @@ impl<'a> SailingsModel<'a> {
                     { "There are no sailings between the these terminals on the specified date." }
                 </div>
             },
-            SailingsStateModel::Sailings(sailings) => self.sailings_table_html(sailings),
+            SailingsStateModel::Sailings(schedule_sailings) => self.sailings_table_html(schedule_sailings),
         }
     }
 
     fn html(self) -> Html {
-        let source_url =
-            self.source_schedule.map(|s| s.source_url.clone()).unwrap_or_else(|| ALL_SCHEDULES_URL.to_string());
-        let info_urls = self
-            .source_schedule
-            .and_then(|schedule| {
-                if schedule.terminal_pair.includes_terminal(TerminalCode::SWB) {
-                    Some(InformationUrlsModel {
-                        sailing_status_url: SWB_SGI_SAILING_STATUS_URL,
-                        departures_url: SWB_DEPARTURES_URL,
-                        service_notices_url: SWB_SGI_SERVICE_NOTICES_URL,
-                    })
-                } else if schedule.terminal_pair.includes_terminal(TerminalCode::TSA) {
-                    Some(InformationUrlsModel {
-                        sailing_status_url: TSA_SGI_SAILING_STATUS_URL,
-                        departures_url: TSA_DEPARTURES_URL,
-                        service_notices_url: TSA_SGI_SERVICE_NOTICES_URL,
-                    })
-                } else {
-                    None
-                }
-            })
-            .unwrap_or(InformationUrlsModel {
+        let info_urls = if self.area_pair.includes_terminal(Terminal::SWB)
+            && self.area_pair.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS)
+        {
+            InformationUrlsModel {
+                sailing_status_url: SWB_SGI_SAILING_STATUS_URL,
+                departures_url: SWB_DEPARTURES_URL,
+                service_notices_url: SWB_SGI_SERVICE_NOTICES_URL,
+            }
+        } else if self.area_pair.includes_terminal(Terminal::TSA)
+            && self.area_pair.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS)
+        {
+            InformationUrlsModel {
+                sailing_status_url: TSA_SGI_SAILING_STATUS_URL,
+                departures_url: TSA_DEPARTURES_URL,
+                service_notices_url: TSA_SGI_SERVICE_NOTICES_URL,
+            }
+        } else {
+            InformationUrlsModel {
                 sailing_status_url: ALL_SAILING_STATUS_URL,
                 departures_url: ALL_DEPARTURES_URL,
                 service_notices_url: ALL_SERVICE_NOTICES_URL,
-            });
+            }
+        };
+        let is_reservable = self.area_pair.is_reservable();
+        let has_thrufares = self.area_pair.has_thrufares();
         html! { <>
             <div class="row mt-4">
                 <div class="col-12 col-md-8 col-lg-6">
                     { self.sailings_html() }
                 </div>
             </div>
-            { if self.terminal_pair.includes_terminal(TerminalCode::TSA) { html! { <>
+            { if is_reservable || has_thrufares { html! { <>
                 <div class="mt-3">
                     <small>
-                        <span class="text-nowrap">
-                            <a href={ BCFERRIES_HOME_URL } target="_blank">{ "Reservations" }</a>
-                            { " are recommended for direct sailings." }
-                        </span>
-                        { " " }
-                        <span class="text-nowrap">
-                            { "See here for more " }
-                            <a href={ THRU_FARE_INFORMATION_URL } target="_blank">{ "information about thru-fares" }</a>
-                            { "." }
-                        </span>
-                    </small>
+                        { if is_reservable { html! {
+                            <span class="text-nowrap">
+                                <a href={ BCFERRIES_HOME_URL } target="_blank">{ "Reservations" }</a>
+                                { " are recommended for direct sailings." }
+                            </span>
+                        }} else {
+                            html! {}
+                        }}
+                        { if has_thrufares { html! { <>
+                            { if is_reservable { " " } else { "" }}
+                            <span class="text-nowrap">
+                                { "See here for more " }
+                                <a href={ THRU_FARE_INFORMATION_URL } target="_blank">{ "information about thru-fares" }</a>
+                                { "." }
+                            </span>
+                        </> }} else {
+                            html! {}
+                        }}
+                        </small>
                 </div>
             </> }} else {
                 html! {}
@@ -275,10 +319,7 @@ impl<'a> SailingsModel<'a> {
                 <small>
                     <div><strong>{ "BC Ferries may adjust schedules at any time and without notice." }</strong></div>
                     <div>
-                        { "Confirm all sailings with the " }
-                        <a class="link-secondary" href={ source_url } target="_blank">
-                            { "original schedule" }
-                        </a>
+                        { "Confirm all sailings with the original schedule" }
                         { ", and check " }
                         <a class="link-secondary" href={ info_urls.service_notices_url } target="_blank">
                             { "service notices" }
@@ -306,7 +347,7 @@ impl FormModel {
     fn onchange_date_input_callback(&self) -> Callback<Event> {
         let date_input_state = self.date_input_state.clone();
         let history = self.history.clone();
-        let terminal_pair = self.terminal_pair;
+        let area_pair = self.area_pair;
         let today = self.today;
         Callback::once(move |e: Event| {
             let orig_date_input = e.target_unchecked_into::<HtmlInputElement>().value();
@@ -316,7 +357,7 @@ impl FormModel {
                 history
                     .push_with_query(
                         Route::Sailings,
-                        SailingsQuery { from: Some(terminal_pair.from), to: Some(terminal_pair.to), date: None },
+                        SailingsQuery { from: Some(area_pair.from), to: Some(area_pair.to), date: None },
                     )
                     .expect("history to push");
             } else if let Ok(date) = parse_iso8601_date(trimmed_date_input) {
@@ -330,11 +371,7 @@ impl FormModel {
                     history
                         .push_with_query(
                             Route::Sailings,
-                            SailingsQuery {
-                                from: Some(terminal_pair.from),
-                                to: Some(terminal_pair.to),
-                                date: Some(date),
-                            },
+                            SailingsQuery { from: Some(area_pair.from), to: Some(area_pair.to), date: Some(date) },
                         )
                         .expect("history to push");
                 }
@@ -350,7 +387,7 @@ impl FormModel {
     fn onclick_adjust_date_button_callback(&self, opt_new_date: Option<Date>) -> Callback<MouseEvent> {
         let date_input_state = self.date_input_state.clone();
         let history = self.history.clone();
-        let terminal_pair = self.terminal_pair;
+        let area_pair = self.area_pair;
         let today = self.today;
         let new_date = opt_new_date.unwrap_or(today);
         Callback::once(move |_| {
@@ -358,7 +395,7 @@ impl FormModel {
             history
                 .push_with_query(
                     Route::Sailings,
-                    SailingsQuery { from: Some(terminal_pair.from), to: Some(terminal_pair.to), date: opt_new_date },
+                    SailingsQuery { from: Some(area_pair.from), to: Some(area_pair.to), date: opt_new_date },
                 )
                 .expect("history to push");
         })
@@ -366,13 +403,13 @@ impl FormModel {
 
     fn onclick_swap_terminals_button_callback(&self) -> Callback<MouseEvent> {
         let history = self.history.clone();
-        let terminal_pair = self.terminal_pair;
+        let area_pair = self.area_pair.swapped();
         let query_date = self.query_date;
         Callback::once(move |_| {
             history
                 .push_with_query(
                     Route::Sailings,
-                    SailingsQuery { from: Some(terminal_pair.to), to: Some(terminal_pair.from), date: query_date },
+                    SailingsQuery { from: Some(area_pair.from), to: Some(area_pair.to), date: query_date },
                 )
                 .expect("history to push");
         })
@@ -385,10 +422,12 @@ impl FormModel {
                     <label class="col-2 col-md-1 col-form-label">{ "From" }</label>
                     <div class="col-10 col-md-7 col-lg-5">
                         <span class="form-control">
-                            { location_terminal_link_html(
-                                self.terminal_pair.from,
-                                SailingsQuery{ from: None, to: Some(self.terminal_pair.to), date: self.query_date }
-                            ) }
+                            <strong>
+                                { area_link_html(
+                                    self.area_pair.from,
+                                    SailingsQuery{ from: None, to: Some(self.area_pair.to), date: self.query_date }
+                                ) }
+                            </strong>
                         </span>
                     </div>
                 </div>
@@ -396,10 +435,12 @@ impl FormModel {
                     <label class="col-2 col-md-1 col-form-label">{ "To" }</label>
                     <div class="col-10 col-md-7 col-lg-5">
                         <span class="form-control">
-                            { location_terminal_link_html(
-                                self.terminal_pair.to,
-                                SailingsQuery{ from: Some(self.terminal_pair.from), to: None, date: self.query_date }
-                            ) }
+                            <strong>
+                                { area_link_html(
+                                    self.area_pair.to,
+                                    SailingsQuery{ from: Some(self.area_pair.from), to: None, date: self.query_date }
+                                ) }
+                            </strong>
                         </span>
                     </div>
                 </div>
@@ -411,7 +452,7 @@ impl FormModel {
                             type="date"
                             placeholder="YYYY-MM-DD"
                             required={ true }
-                            class={ classes!("form-control", "align-self-center", "date-input", self.date_input_state.value.is_err().then(|| "is-invalid")) }
+                            class={ classes!("form-control", "align-self-center", "date-input", self.date_input_state.value.is_err().then_some("is-invalid")) }
                             value={ self.date_input_state.input.to_owned() }
                             min={ format_iso8601_date(self.today) }
                             max={ format_iso8601_date(self.max_date) }
@@ -461,7 +502,7 @@ impl FormModel {
 
 #[function_component(Sailings)]
 pub fn sailings_component(props: &SailingsProps) -> Html {
-    let terminal_pair = TerminalCodePair { from: props.terminal_pair.from, to: props.terminal_pair.to };
+    let area_pair = AreaPair { from: props.area_pair.from, to: props.area_pair.to };
     let query_date = props.date;
     let today = today_vancouver();
     let query_date_or_today = match query_date {
@@ -475,11 +516,11 @@ pub fn sailings_component(props: &SailingsProps) -> Html {
         input: format_iso8601_date(query_date_or_today),
         value: Ok(query_date_or_today),
     });
-    let sailings_model = SailingsModel::new(&schedules_state, &date_input_state, terminal_pair, query_date_or_today);
+    let sailings_model = SailingsModel::new(&schedules_state, &date_input_state, area_pair, query_date_or_today);
     let form_model = FormModel {
         history,
         date_input_state,
-        terminal_pair,
+        area_pair,
         query_date,
         today,
         view_date: sailings_model.view_date,

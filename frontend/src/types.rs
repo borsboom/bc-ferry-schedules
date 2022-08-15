@@ -13,8 +13,8 @@ pub enum Route {
 
 #[derive(Clone, Deserialize, PartialEq, Serialize)]
 pub struct SailingsQuery {
-    pub from: Option<TerminalCode>,
-    pub to: Option<TerminalCode>,
+    pub from: Option<Area>,
+    pub to: Option<Area>,
     pub date: Option<Date>,
 }
 
@@ -32,7 +32,7 @@ impl SailingsQuery {
 pub enum SchedulesState {
     Init,
     Loading,
-    Loaded(Rc<HashMap<TerminalCodePair, Vec<Schedule>>>),
+    Loaded(Rc<HashMap<TerminalPair, Vec<Schedule>>>),
     Failed,
 }
 

@@ -23,7 +23,7 @@ fn navbar_component() -> Html {
                 <div class="collapse navbar-collapse">
                     <ul class="navbar-nav">
                         <li class="nav-item">
-                            <Link<Route> classes={classes!("nav-link", matches!(route, Route::Home).then(|| "active"))} to={Route::Home}>
+                            <Link<Route> classes={classes!("nav-link", matches!(route, Route::Home).then_some("active"))} to={Route::Home}>
                                 { "Home" }
                             </Link<Route>>
                         </li>
@@ -42,31 +42,35 @@ fn navbar_component() -> Html {
     }
 }
 
-fn select_from_terminal_html(query: &SailingsQuery) -> Html {
+fn select_from_area_html(query: &SailingsQuery) -> Html {
     html! { <>
         <p class="mt-3">
             { if query.to.is_none() {
-                "To get started, select your departure terminal:"
+                "To get started, select your departure area:"
             } else {
-                "Select your departure terminal:"
+                "Select your departure area:"
             }}
         </p>
         <ul>
-            { for TerminalCode::iter().map(|from| html!{
+            { for Area::iter().map(|from| html!{
                 <li>
-                    { location_terminal_link_html(from, SailingsQuery{from: Some(from), ..*query}) }
+                    <strong>{ area_link_html(from, SailingsQuery{from: Some(from), ..*query}) }</strong>
                 </li>
             })}
         </ul>
     </> }
 }
 
-fn select_to_terminal_html(from: TerminalCode, query: &SailingsQuery) -> Html {
+fn select_to_area_html(from: Area, query: &SailingsQuery) -> Html {
+    let mut to_areas: Vec<Area> = ALL_AREA_PAIRS.iter().filter(|ap| ap.from == from).map(|ap| ap.to).collect();
+    to_areas.sort_unstable();
     html! { <>
-        <p class="mt-3">{ "Select your arrival terminal:" }</p>
+        <p class="mt-3">{ "Select your arrival area:" }</p>
         <ul>
-            { for TerminalCode::iter().filter(|&to| (TerminalCodePair { from, to }).is_visible()).map(|to| html! {
-                <li>{ location_terminal_link_html(to, SailingsQuery{to: Some(to), ..*query}) }</li>
+            { for to_areas.iter().map(|&to| html! {
+                    <li>
+                        <strong>{ area_link_html(to, SailingsQuery{to: Some(to), ..*query}) }</strong>
+                    </li>
             }) }
         </ul>
     </> }
@@ -76,12 +80,12 @@ fn home_html() -> Html {
     html! { <>
         <h1 class="display-6">
             { "B.C. Ferry Schedules" }
-            <small class="text-muted">{ " for the Outer Gulf Islands" }</small>
+            <small class="text-muted">{ " for the Southern Gulf Islands" }</small>
         </h1>
         <p class="lead">
-            { "An easy to use and understand presentation of the BC Ferries schedules for routes five and nine, serving Galiano, Mayne, Pender and Saturna Islands and Long Harbour (on Salt Spring Island) to/from Victoria and Vancouver. Just select your terminals and date, and you're shown the sailings for that day."}
+            { "An easy to use and understand presentation of the BC Ferries schedules for Galiano Island, Mayne Island, Pender Islands, Salt Spring Island, Saturna Island, Victoria, and Vancouver. Just select your terminals and date, and you're shown the sailings for that day."}
         </p>
-        { select_from_terminal_html(&SailingsQuery::new()) }
+        { select_from_area_html(&SailingsQuery::new()) }
         <p>
             { "These routes are among the most complex and confusing in the system, and even the most seasoned ferry user is prone to mis-reading the original schedules." }
         </p>
@@ -116,29 +120,29 @@ fn sailings_page_component() -> Html {
             { if let Some(from) = query.from { html! {
                 <div>
                     { "From "}
-                    { location_terminal_html(from) }
+                    <strong>{ from.long_name() }</strong>
                 </div>
             }} else {
                 html! {}
             }}
             { match query.to {
-                Some(to) if query.from.map(|from| (TerminalCodePair{ from, to }).is_visible()).unwrap_or(true) => html! {
+                Some(to) if query.from.map(|from| ALL_AREA_PAIRS.contains(&AreaPair{ from, to })).unwrap_or(true) => html! {
                     <div>
                         { "To " }
-                        { location_terminal_html(to) }
+                        <strong>{ to.long_name() }</strong>
                     </div>
                 },
                 _ => html! {},
             }}
         </h5>
         { match query {
-            SailingsQuery { from: None, .. } => select_from_terminal_html(&query),
-            SailingsQuery { from: Some(from), to: None, .. } => select_to_terminal_html(from, &query),
+            SailingsQuery { from: None, .. } => select_from_area_html(&query),
+            SailingsQuery { from: Some(from), to: None, .. } => select_to_area_html(from, &query),
             SailingsQuery { from: Some(from), to: Some(to), date } => {
-                if (TerminalCodePair { from, to }.is_visible()) { html! {
-                    <Sailings terminal_pair={TerminalCodePair{from, to}} {date}/>
+                if ALL_AREA_PAIRS.contains(&AreaPair { from, to }) { html! {
+                    <Sailings area_pair={AreaPair{from, to}} {date}/>
                 }} else {
-                    select_to_terminal_html(from, &query)
+                    select_to_area_html(from, &query)
                 }
             }
         }}
@@ -194,8 +198,8 @@ fn load_schedules_state(schedules_state: UseStateHandle<SchedulesState>) {
     wasm_bindgen_futures::spawn_local(async move {
         match fetch_json::<Vec<Schedule>>("/data/schedules.json").await {
             Ok(schedules) => {
-                let terminal_pair_schedules_map = into_group_map(schedules, |s| (s.terminal_pair, s));
-                schedules_state.set(SchedulesState::Loaded(Rc::new(terminal_pair_schedules_map)));
+                schedules_state
+                    .set(SchedulesState::Loaded(Rc::new(into_vec_group_map(schedules, |i| i.terminal_pair))));
             }
             Err(err) => {
                 error!("{}", err);

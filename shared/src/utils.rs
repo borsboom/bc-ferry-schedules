@@ -30,16 +30,39 @@ pub fn parse_iso8601_date(input: &str) -> Result<Date> {
     Date::parse(input, ISO8601_DATE_FORMAT).context("Invalid date format (expect YYYY-MM-DD)")
 }
 
-pub fn into_group_map<T, I, K, V, F>(iter: I, f: F) -> HashMap<K, Vec<V>>
+pub fn into_group_map<T, In, Key, FKey, FNew, FIns, Out>(iter: In, f: FKey, n: FNew, p: FIns) -> HashMap<Key, Out>
 where
-    I: IntoIterator<Item = T>,
-    K: Eq + Hash,
-    F: Fn(T) -> (K, V),
+    In: IntoIterator<Item = T>,
+    Key: Eq + Hash,
+    FKey: Fn(&T) -> Key,
+    FNew: Fn() -> Out,
+    FIns: Fn(&mut Out, T),
 {
     iter.into_iter().fold(HashMap::new(), |mut map, item| {
-        let (key, value) = f(item);
-        map.entry(key).or_insert_with(Vec::new).push(value);
+        let key = f(&item);
+        p(map.entry(key).or_insert_with(&n), item);
         map
+    })
+}
+
+pub fn into_vec_group_map<T, In, Key, FKey>(iter: In, f: FKey) -> HashMap<Key, Vec<T>>
+where
+    In: IntoIterator<Item = T>,
+    Key: Eq + Hash,
+    FKey: Fn(&T) -> Key,
+{
+    into_group_map(iter, f, Vec::new, |v, i| v.push(i))
+}
+
+pub fn into_hashset_group_map<T, In, Key, FKey>(iter: In, f: FKey) -> HashMap<Key, HashSet<T>>
+where
+    T: Eq + Hash,
+    In: IntoIterator<Item = T>,
+    Key: Eq + Hash,
+    FKey: Fn(&T) -> Key,
+{
+    into_group_map(iter, f, HashSet::new, |s, i| {
+        s.insert(i);
     })
 }
 

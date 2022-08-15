@@ -11,28 +11,8 @@ pub fn human_time(time: OffsetDateTime) -> HumanTime {
     HumanTime::from_seconds((time - now_vancouver()).whole_seconds())
 }
 
-pub fn location_terminal_link_html(terminal: TerminalCode, query: SailingsQuery) -> Html {
-    html! { <>
-        <strong>
-            <Link<Route, SailingsQuery> to={Route::Sailings} {query}>{ terminal.long_location_name() }</Link<Route, SailingsQuery>>
-        </strong>
-        <small class="text-muted">
-            { " ("}
-            { terminal.terminal_name() }
-            { ")"}
-        </small>
-    </> }
-}
-
-pub fn location_terminal_html(terminal: TerminalCode) -> Html {
-    html! { <>
-        <strong>
-            { terminal.long_location_name() }
-        </strong>
-        <span class="text-muted font-weight-normal">
-            { " ("}
-            { terminal.terminal_name() }
-            { ")"}
-        </span>
-    </> }
+pub fn area_link_html(area: Area, query: SailingsQuery) -> Html {
+    html! {
+        <Link<Route, SailingsQuery> to={Route::Sailings} {query}>{ area.long_name() }</Link<Route, SailingsQuery>>
+    }
 }

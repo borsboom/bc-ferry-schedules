@@ -1,9 +1,9 @@
-# B.C. Ferry Schedules for the Outer Gulf Islands
+# B.C. Ferry Schedules for the Southern Gulf Islands
 
 An easy to use and understand presentation of the BC Ferries schedules for
-routes five and nine, serving Galiano, Mayne, Pender and Saturna Islands and
-Long Harbour (on Salt Spring Island) to/from Victoria and Vancouver. Just
-select your terminals and date, and you're shown the sailings for that day.
+Galiano Island, Mayne Island, Pender Islands, Salt Spring Island, Saturna
+Island, Victoria, and Vancouver. Just select your terminals and date, and
+you're shown the sailings for that day.
 
 Web site: https://ferries.borsboom.io/
 

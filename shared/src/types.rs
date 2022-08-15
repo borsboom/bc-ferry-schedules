@@ -1,3 +1,4 @@
+use crate::constants::*;
 use crate::imports::*;
 
 pub type TimeFormat = [time::format_description::FormatItem<'static>];
@@ -5,20 +6,66 @@ pub type TimeFormat = [time::format_description::FormatItem<'static>];
 #[derive(
     Copy, Clone, Debug, Deserialize, Display, EnumString, Eq, EnumIter, Hash, Ord, PartialEq, PartialOrd, Serialize,
 )]
-pub enum TerminalCode {
-    PSB, // Galiano Island (Sturdies Bay)
-    PVB, // Mayne Island (Village Bay)
-    POB, // Pender Island (Otter Bay)
-    PLH, // Salt Spring Island (Long Harbour)
-    PST, // Saturna Island (Lyall Harbour)
-    TSA, // Vancouver (Tsawwassen)
-    SWB, // Victoria (Swartz Bay)
+pub enum Area {
+    Chemainus,
+    Crofton,
+
+    // Gulf Islands terminals have aliases for backward compatibility when parsing URL query
+    #[serde(alias = "PSB")]
+    Galiano,
+
+    #[serde(alias = "PVB")]
+    Mayne,
+
+    #[serde(alias = "POB")]
+    Pender,
+
+    Penelakut,
+
+    #[serde(alias = "PLH")]
+    SaltSpring,
+
+    #[serde(alias = "PST")]
+    Saturna,
+
+    Thetis,
+
+    #[serde(alias = "TSA")]
+    Vancouver,
+
+    #[serde(alias = "SWB")]
+    Victoria,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct TerminalCodePair {
-    pub from: TerminalCode,
-    pub to: TerminalCode,
+#[derive(
+    Copy, Clone, Debug, Deserialize, Display, EnumString, Eq, EnumIter, Hash, Ord, PartialEq, PartialOrd, Serialize,
+)]
+pub enum Terminal {
+    CFT, // Crofton
+    CHM, // Chemainus
+    FUL, // Salt Spring Island (Fulford Harbour)
+    PEN, // Penelakut Island (Telegraph Harbour)
+    PLH, // Salt Spring Island (Long Harbour)
+    POB, // Pender Island (Otter Bay)
+    PSB, // Galiano Island (Sturdies Bay)
+    PST, // Saturna Island (Lyall Harbour)
+    PVB, // Mayne Island (Village Bay)
+    SWB, // Victoria (Swartz Bay)
+    THT, // Thetis Island (Preedy Harbour)
+    TSA, // Vancouver (Tsawwassen)
+    VES, // Salt Spring Island (Vesuvius Bay)
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct AreaPair {
+    pub from: Area,
+    pub to: Area,
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct TerminalPair {
+    pub from: Terminal,
+    pub to: Terminal,
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -31,7 +78,7 @@ pub enum StopType {
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Stop {
     pub type_: StopType,
-    pub terminal: TerminalCode,
+    pub terminal: Terminal,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -70,65 +117,118 @@ pub struct ScheduleItem {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Schedule {
-    pub terminal_pair: TerminalCodePair,
+    pub terminal_pair: TerminalPair,
     pub date_range: DateRange,
     pub items: Vec<ScheduleItem>,
     pub source_url: String,
     pub refreshed_at: OffsetDateTime,
 }
 
-impl TerminalCode {
-    pub fn is_gulf_island(&self) -> bool {
+impl Area {
+    pub fn long_name(&self) -> &'static str {
         match *self {
-            TerminalCode::PLH => true,
-            TerminalCode::POB => true,
-            TerminalCode::PSB => true,
-            TerminalCode::PST => true,
-            TerminalCode::PVB => true,
-            TerminalCode::SWB => false,
-            TerminalCode::TSA => false,
+            Area::Chemainus => "Chemainus",
+            Area::Crofton => "Crofton",
+            Area::Galiano => "Galiano Island",
+            Area::Mayne => "Mayne Island",
+            Area::Pender => "Pender Island",
+            Area::Penelakut => "Penelakut Island",
+            Area::SaltSpring => "Salt Spring Island",
+            Area::Saturna => "Saturna Island",
+            Area::Thetis => "Thetis Island",
+            Area::Vancouver => "Vancouver",
+            Area::Victoria => "Victoria",
         }
     }
 
-    pub fn long_location_name(&self) -> &'static str {
+    pub fn short_name(&self) -> &'static str {
         match *self {
-            TerminalCode::PLH => "Salt Spring Island",
-            TerminalCode::POB => "Pender Island",
-            TerminalCode::PSB => "Galiano Island",
-            TerminalCode::PST => "Saturna Island",
-            TerminalCode::PVB => "Mayne Island",
-            TerminalCode::SWB => "Victoria",
-            TerminalCode::TSA => "Vancouver",
+            Area::Chemainus => "Chemainus",
+            Area::Crofton => "Crofton",
+            Area::Galiano => "Galiano",
+            Area::Mayne => "Mayne",
+            Area::Pender => "Pender",
+            Area::Penelakut => "Penelakut",
+            Area::SaltSpring => "Salt Spring",
+            Area::Saturna => "Saturna",
+            Area::Thetis => "Thetis",
+            Area::Vancouver => "Vancouver",
+            Area::Victoria => "Victoria",
         }
     }
 
-    pub fn short_location_name(&self) -> &'static str {
+    pub fn includes_terminal(&self, terminal: Terminal) -> bool {
+        self.includes_any_terminal(iter::once(terminal))
+    }
+
+    pub fn includes_any_terminal<I: IntoIterator<Item = Terminal>>(&self, terminals: I) -> bool {
+        AREA_TERMINALS.get(self).map(|v| terminals.into_iter().any(|t| v.contains(&t))).unwrap_or(false)
+    }
+}
+
+impl Terminal {
+    pub fn name(&self) -> &'static str {
         match *self {
-            TerminalCode::PLH => "Salt Spring",
-            TerminalCode::POB => "Pender",
-            TerminalCode::PSB => "Galiano",
-            TerminalCode::PST => "Saturna",
-            TerminalCode::PVB => "Mayne",
-            TerminalCode::SWB => "Victoria",
-            TerminalCode::TSA => "Vancouver",
+            Terminal::CFT => "Crofton",
+            Terminal::CHM => "Chemainus",
+            Terminal::FUL => "Fulford Harbour",
+            Terminal::PEN => "Telegraph Harbour",
+            Terminal::PLH => "Long Harbour",
+            Terminal::POB => "Otter Bay",
+            Terminal::PSB => "Sturdies Bay",
+            Terminal::PST => "Lyall Harbour",
+            Terminal::PVB => "Village Bay",
+            Terminal::SWB => "Swartz Bay",
+            Terminal::THT => "Preedy Harbour",
+            Terminal::TSA => "Tsawwassen",
+            Terminal::VES => "Vesuvius Bay",
         }
     }
 
-    pub fn terminal_name(&self) -> &'static str {
+    pub fn area(&self) -> Area {
         match *self {
-            TerminalCode::PLH => "Long Harbour",
-            TerminalCode::POB => "Otter Bay",
-            TerminalCode::PSB => "Sturdies Bay",
-            TerminalCode::PST => "Lyall Harbour",
-            TerminalCode::PVB => "Village Bay",
-            TerminalCode::SWB => "Swartz Bay",
-            TerminalCode::TSA => "Tsawwassen",
+            Terminal::CFT => Area::Crofton,
+            Terminal::FUL => Area::SaltSpring,
+            Terminal::PLH => Area::SaltSpring,
+            Terminal::POB => Area::Pender,
+            Terminal::PSB => Area::Galiano,
+            Terminal::PST => Area::Saturna,
+            Terminal::PVB => Area::Mayne,
+            Terminal::SWB => Area::Victoria,
+            Terminal::TSA => Area::Vancouver,
+            Terminal::VES => Area::SaltSpring,
+            Terminal::CHM => Area::Chemainus,
+            Terminal::THT => Area::Thetis,
+            Terminal::PEN => Area::Penelakut,
         }
     }
 }
 
-impl TerminalCodePair {
-    pub fn parse_schedule_code_pair(code_pair: &str) -> Result<TerminalCodePair> {
+impl AreaPair {
+    pub fn swapped(&self) -> AreaPair {
+        AreaPair { from: self.to, to: self.from }
+    }
+
+    pub fn includes_terminal(&self, terminal: Terminal) -> bool {
+        self.from.includes_terminal(terminal) || self.to.includes_terminal(terminal)
+    }
+
+    pub fn includes_any_terminal(&self, terminals: &HashSet<Terminal>) -> bool {
+        self.from.includes_any_terminal(terminals.iter().cloned())
+            || self.to.includes_any_terminal(terminals.iter().cloned())
+    }
+
+    pub fn is_reservable(&self) -> bool {
+        self.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS) && self.includes_terminal(Terminal::TSA)
+    }
+
+    pub fn has_thrufares(&self) -> bool {
+        AREA_PAIR_TERMINAL_PAIRS.get(self).map(|tps| tps.iter().any(|tp| tp.has_thrufares())).unwrap_or(false)
+    }
+}
+
+impl TerminalPair {
+    pub fn parse_schedule_code_pair(code_pair: &str) -> Result<TerminalPair> {
         let inner = || {
             let parts: Vec<_> = code_pair.split('-').collect();
             if parts.len() != 2 {
@@ -136,7 +236,7 @@ impl TerminalCodePair {
             }
             let from = parts[0].parse().with_context(|| format!("Invalid first part: {:?}", parts[0]))?;
             let to = parts[1].parse().with_context(|| format!("Invalid second part: {:?}", parts[1]))?;
-            Ok(TerminalCodePair { from, to })
+            Ok(TerminalPair { from, to })
         };
         inner().with_context(|| format!("Failed to parse terminal code pair: {:?}", code_pair))
     }
@@ -145,27 +245,37 @@ impl TerminalCodePair {
         format!("{}-{}", self.from, self.to)
     }
 
-    pub fn includes_terminal(&self, terminal: TerminalCode) -> bool {
+    pub fn includes_terminal(&self, terminal: Terminal) -> bool {
         self.from == terminal || self.to == terminal
     }
 
-    pub fn is_visible(&self) -> bool {
-        self.from != self.to
-            && (self.from.is_gulf_island() || self.to.is_gulf_island())
-            && !(self.from == TerminalCode::SWB && self.to == TerminalCode::PLH)
+    pub fn includes_any_terminal(&self, terminals: &HashSet<Terminal>) -> bool {
+        terminals.contains(&self.from) || terminals.contains(&self.to)
+    }
+
+    pub fn has_thrufares(&self) -> bool {
+        self.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS) && self.includes_terminal(Terminal::TSA)
+    }
+
+    pub fn swapped(&self) -> TerminalPair {
+        TerminalPair { from: self.to, to: self.from }
+    }
+
+    pub fn area_pair(&self) -> AreaPair {
+        AreaPair { from: self.from.area(), to: self.to.area() }
     }
 }
 
-impl Display for TerminalCodePair {
+impl Display for TerminalPair {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(&self.to_schedule_code_pair())
     }
 }
 
-impl FromStr for TerminalCodePair {
+impl FromStr for TerminalPair {
     type Err = anyhow::Error;
-    fn from_str(s: &str) -> Result<TerminalCodePair> {
-        TerminalCodePair::parse_schedule_code_pair(s)
+    fn from_str(s: &str) -> Result<TerminalPair> {
+        TerminalPair::parse_schedule_code_pair(s)
     }
 }
 

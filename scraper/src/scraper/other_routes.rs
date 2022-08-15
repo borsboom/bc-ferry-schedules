@@ -114,7 +114,7 @@ fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<Sch
         }
         ScheduleItem::merge_items(items)
     };
-    inner().context("Failed to parse Tsawwassen schedule table")
+    inner().context("Failed to parse other route schedule table")
 }
 
 fn parse_date_range_from_schedule_path_query(schedule_path_query: &str) -> Result<DateRange> {
@@ -128,7 +128,7 @@ fn parse_date_range_from_schedule_path_query(schedule_path_query: &str) -> Resul
 async fn scrape_schedule(
     options: &Options,
     cache: &Cache<'_>,
-    terminal_pair: TerminalCodePair,
+    terminal_pair: TerminalPair,
     schedule_path_query: &str,
     today: Date,
 ) -> Result<Option<Schedule>> {
@@ -159,19 +159,19 @@ async fn scrape_schedule(
     };
     inner
         .await
-        .with_context(|| format!("Failed to scrape Tsawwassen schedule for {} from: {:?}", terminal_pair, source_url))
+        .with_context(|| format!("Failed to scrape other route schedule for {} from: {:?}", terminal_pair, source_url))
 }
 
-pub async fn scrape_tsawwassen_schedules(
+pub async fn scrape_other_route_schedules(
     options: &Options,
     cache: &Cache<'_>,
-    terminal_pair: TerminalCodePair,
+    terminal_pair: TerminalPair,
     today: Date,
 ) -> Result<Vec<Schedule>> {
     if options.terminals.is_some() && options.terminals != Some(terminal_pair) {
         return Ok(vec![]);
     }
-    let base_url = format!("{}/{}", SEASONAL_SCHEDULES_BASE_URL, terminal_pair.to_schedule_code_pair());
+    let base_url = format!("{}/{}", OTHER_ROUTE_SCHEDULES_BASE_URL, terminal_pair.to_schedule_code_pair());
     let inner = async {
         let base_document = cache
             .get_html(&base_url, &HTML_ERROR_REGEX)
@@ -192,5 +192,5 @@ pub async fn scrape_tsawwassen_schedules(
     };
     inner
         .await
-        .with_context(|| format!("Failed to scrape Tsawwassen schedule for {} from: {:?}", terminal_pair, base_url))
+        .with_context(|| format!("Failed to scrape other route schedule for {} from: {:?}", terminal_pair, base_url))
 }

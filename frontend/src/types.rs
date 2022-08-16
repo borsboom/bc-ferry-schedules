@@ -1,6 +1,6 @@
 use crate::imports::*;
 
-#[derive(Clone, Routable, PartialEq)]
+#[derive(Clone, Eq, Routable, PartialEq)]
 pub enum Route {
     #[at("/")]
     Home,
@@ -11,7 +11,7 @@ pub enum Route {
     NotFound,
 }
 
-#[derive(Clone, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Deserialize, Eq, PartialEq, Serialize)]
 pub struct SailingsQuery {
     pub from: Option<Area>,
     pub to: Option<Area>,

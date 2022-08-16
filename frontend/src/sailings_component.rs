@@ -3,7 +3,7 @@ use crate::sailings_processor::*;
 use crate::types::*;
 use crate::utils::*;
 
-#[derive(Properties, PartialEq)]
+#[derive(Eq, PartialEq, Properties)]
 pub struct SailingsProps {
     pub area_pair: AreaPair,
     pub date: Option<Date>,

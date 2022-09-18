@@ -1,3 +1,4 @@
 [toolchain]
+# 1.63.0 breaks the frontend on iOS
 channel = "1.62.0"
 profile = "default"

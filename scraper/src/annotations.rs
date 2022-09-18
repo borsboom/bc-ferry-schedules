@@ -1,3 +1,4 @@
+use crate::constants::*;
 use crate::imports::*;
 use crate::macros::*;
 
@@ -34,6 +35,14 @@ fn text_date_restriction<'a, T: Into<Cow<'static, str>>>(
 impl AnnotationDates {
     pub fn new() -> AnnotationDates {
         AnnotationDates { only: HashSet::new(), except: HashSet::new() }
+    }
+
+    pub fn only<'a, I: IntoIterator<Item = &'a Date>>(only: I) -> AnnotationDates {
+        AnnotationDates { except: HashSet::new(), only: only.into_iter().cloned().collect() }
+    }
+
+    pub fn except<'a, I: IntoIterator<Item = &'a Date>>(except: I) -> AnnotationDates {
+        AnnotationDates { only: HashSet::new(), except: except.into_iter().cloned().collect() }
     }
 
     pub fn is_always(&self) -> bool {
@@ -93,9 +102,11 @@ impl AnnotationDates {
 }
 
 impl Annotations {
-    pub fn new() -> Annotations {
+    pub fn new(date_range: &DateRange) -> Annotations {
         Annotations {
-            holiday_monday: AnnotationDates::new(),
+            holiday_monday: AnnotationDates::only(
+                EXTRA_HOLIDAY_MONDAYS.iter().filter(|d| date_range.includes_date_inclusive(**d)),
+            ),
             star: AnnotationDates::new(),
             star_by_time: HashMap::new(),
             star2: AnnotationDates::new(),

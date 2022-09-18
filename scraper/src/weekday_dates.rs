@@ -48,31 +48,33 @@ impl WeekdayDates {
             let from_year = date_range.from.year();
             // TODO: generalize these rules (e.g. ` & ` and ` to ` become `, ` and `-`)
             let normalized_text = match orig_text {
-                "Sun & Hol Mon" => "Sun, Hol Mon",
-                "Fri & Apr 14 only" => "Fri, Apr 14",
-                "Mon* to Sat" => "Mon*-Sat",
-                "Mon*-Thu and Jan 21 & 28" => "Mon*-Thu, Jan 21, Jan 28",
-                "Jan 21 & 28 only" => "Jan 21, Jan 28",
-                "Dec 23 & 30 only" => "Dec 23, Dec 30",
-                "Dec 26 only" => "Dec 26",
-                "Fri, Hol Mon & Apr 14 only" => "Fri, Hol Mon, Apr 14",
-                "Sat, Sun & Hol Mon" => "Sat, Sun, Hol Mon",
-                "Dec 26 & 27 only" => "Dec 26, Dec 27",
-                "Fri-Sun, Hol Mon & Apr 14 only" => "Fri-Sun, Hol Mon, Apr 14",
-                "Fri-Sun & Hol Mon" => "Fri-Sun, Hol Mon",
-                "Dec 22, 27" => "Dec 22, Dec 27",
                 "Dec 22 & 27 only" => "Dec 22, Dec 27",
-                "Dec 26-27" => "Dec 26, Dec 27",
+                "Dec 22, 27" => "Dec 22, Dec 27",
+                "Dec 23 & 30 only" => "Dec 23, Dec 30",
+                "Dec 26 & 27 only" => "Dec 26, Dec 27",
                 "Dec 26 & Jan 2" => "Dec 26, Jan 2",
-                "Sep 19 & Oct 3" => "Sep 19, Oct 3",
-                "Sep 12, 26 & Oct 10" => "Sep 12, Sep 26, Oct 10",
-                "Mon-Fri, Hol Mon except May 30" => "Mon-Fri, Hol Mon, except May 30",
+                "Dec 26 only" => "Dec 26",
+                "Dec 26-27" => "Dec 26, Dec 27",
+                "Fri & Apr 14 only" => "Fri, Apr 14",
+                "Fri & Sun" => "Fri, Sun",
+                "Fri-Sun & Hol Mon" => "Fri-Sun, Hol Mon",
+                "Fri-Sun, Hol Mon & Apr 14 only" => "Fri-Sun, Hol Mon, Apr 14",
+                "Fri, Hol Mon & Apr 14 only" => "Fri, Hol Mon, Apr 14",
+                "Jan 21 & 28 only" => "Jan 21, Jan 28",
                 "Mon-Fri & Hol Mon" => "Mon-Fri, Hol Mon",
+                "Mon-Fri, Hol Mon except May 30" => "Mon-Fri, Hol Mon, except May 30",
                 "Mon-Sat & Hol Mon" => "Mon-Sat, Hol Mon",
                 "Mon-Thu & Hol Mon" => "Mon-Thu, Hol Mon",
-                "Mon-Thu* & Hol Mon" => "Mon-Thu*, Hol Mon",
                 "Mon-Thu, Sun & Hol Mon" => "Mon-Thu, Sun, Hol Mon",
-                "Fri & Sun" => "Fri, Sun",
+                "Mon-Thu* & Hol Mon" => "Mon-Thu*, Hol Mon",
+                "Mon* to Sat" => "Mon*-Sat",
+                "Mon*-Thu and Jan 21 & 28" => "Mon*-Thu, Jan 21, Jan 28",
+                "Sat, Sun & Hol Mon" => "Sat, Sun, Hol Mon",
+                "Sep 12, 26 & Oct 10" => "Sep 12, Sep 26, Oct 10",
+                "Sep 19 & Oct 3" => "Sep 19, Oct 3",
+                "Sun & Hol Mon" => "Sun, Hol Mon",
+                "Sun & Oct 10 only" => "Sun, Oct 10",
+                "Sat, Sun & Oct 10 only" => "Sat, Sun, Oct 10",
                 text => text,
             };
             for split_text in normalized_text.split(',').map(|s| s.trim().to_lowercase()) {
@@ -174,6 +176,34 @@ impl WeekdayDates {
                             Month::May,
                             30,
                         )?)?);
+                    }
+                    "mon-thu except oct 10" => {
+                        result.days([Weekday::Monday, Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday]);
+                        result.day_restriction(
+                            Weekday::Monday,
+                            &AnnotationDates::except(&[date_range.make_year_within(Date::from_calendar_date(
+                                from_year,
+                                Month::October,
+                                10,
+                            )?)?]),
+                        );
+                    }
+                    "mon-fri except oct 10" => {
+                        result.days([
+                            Weekday::Monday,
+                            Weekday::Tuesday,
+                            Weekday::Wednesday,
+                            Weekday::Thursday,
+                            Weekday::Friday,
+                        ]);
+                        result.day_restriction(
+                            Weekday::Monday,
+                            &AnnotationDates::except(&[date_range.make_year_within(Date::from_calendar_date(
+                                from_year,
+                                Month::October,
+                                10,
+                            )?)?]),
+                        );
                     }
                     _ => bail!("Unrecognized days item text: {:?}", split_text),
                 }

@@ -6,6 +6,12 @@ export AWS_PAGER := ""
 schedules_key := "data/schedules.json"
 local_schedules_file := "frontend/local/" + schedules_key
 upload_data_args := '--output-s3-bucket "$S3_BUCKET" --output-s3-key ' + quote(schedules_key) + ' --invalidate-cloudfront-distribution-id "$CLOUDFRONT_DISTRIBUTION_ID"'
+normalize_data_jq := '.
+    | sort_by(.terminal_pair.from + .terminal_pair.to + .date_range.from + .date_range.to)
+    | .[].items |= sort_by(.sailing.depart_time + .sailing.arrive_time)
+    | (.. | .refreshed_at? | select(. != null)) |= null
+    | (.. | .Only? | select(. != null)) |= sort
+    | (.. | .Except? | select(. != null)) |= sort'
 
 help:
     @{{ just_executable() }} --list
@@ -45,5 +51,12 @@ upload-data *args:
 upload-data-with-bin bin *args:
     shift; {{ quote(bin) }} {{ upload_data_args }} "$@"
 
+compare-data: local-data
+    mkdir -p tmp
+    aws s3 cp "s3://$S3_BUCKET/"{{ quote(schedules_key) }} tmp/compare_old_data_unformatted.json
+    jq --sort-keys {{ quote(normalize_data_jq) }} < tmp/compare_old_data_unformatted.json >tmp/compare_old_data.json
+    jq --sort-keys {{ quote(normalize_data_jq) }} <{{ quote(local_schedules_file) }} >tmp/compare_new_data.json
+    diff -u tmp/compare_old_data.json tmp/compare_new_data.json
+
 clean:
-    rm -rf Cargo.lock frontend/dist/ frontend/dist-release/ frontend/local/ target/
+    rm -rf Cargo.lock frontend/dist/ frontend/dist-release/ frontend/local/ target/ tmp/

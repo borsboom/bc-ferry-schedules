@@ -14,7 +14,7 @@ fn parse_annotations(
 ) -> Result<(Annotations, Vec<String>)> {
     let inner = || {
         let mut depart_times_texts = Vec::new();
-        let mut annotations = Annotations::new();
+        let mut annotations = Annotations::new(date_range);
         for depart_times_annotation_text in depart_times_annotations_texts {
             let trimed_commas = regex!(r"^(,\s*)?(.*)(\s*,)?$").replace(&depart_times_annotation_text, "$2");
             if regex!(r"^\d").is_match(trimed_commas.as_ref()) {

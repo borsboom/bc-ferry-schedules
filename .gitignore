@@ -4,3 +4,4 @@ frontend/dist-release/
 frontend/dist/
 frontend/local/
 target/
+tmp/

@@ -10,7 +10,7 @@ use crate::weekday_dates::*;
 
 fn parse_annotations(table_elem: &ElementRef, date_range: &DateRange) -> Result<(Annotations, Vec<Vec<String>>)> {
     let inner = || {
-        let mut annotations = Annotations::new();
+        let mut annotations = Annotations::new(date_range);
         let mut item_rows = Vec::new();
         for row_elem in table_elem.select(selector!("tr:not(:first-child)")) {
             let cell_elems: Vec<ElementRef> = row_elem.select(selector!("td")).collect();

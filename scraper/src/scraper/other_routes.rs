@@ -145,7 +145,7 @@ async fn scrape_schedule(
             .with_context(|| format!("Failed to download schedule HTML from: {:?}", source_url))?;
         info!("Parsing schedule for {}, {}", terminal_pair, date_range);
         let table_elem = document
-            .select(selector!("div.seasonalSchedulesContainer table"))
+            .select(selector!("div.seasonal-schedule-wrapper table"))
             .next()
             .ok_or_else(|| anyhow!("Missing table element in schedule"))?;
         let items = parse_table(table_elem, &date_range)?;

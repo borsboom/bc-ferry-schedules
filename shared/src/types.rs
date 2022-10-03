@@ -7,32 +7,25 @@ pub type TimeFormat = [time::format_description::FormatItem<'static>];
     Copy, Clone, Debug, Deserialize, Display, EnumString, Eq, EnumIter, Hash, Ord, PartialEq, PartialOrd, Serialize,
 )]
 pub enum Area {
+    Brentwood,
     Chemainus,
     Crofton,
-
     // Gulf Islands terminals have aliases for backward compatibility when parsing URL query
     #[serde(alias = "PSB")]
     Galiano,
-
     #[serde(alias = "PVB")]
     Mayne,
-
+    MillBay,
     #[serde(alias = "POB")]
     Pender,
-
     Penelakut,
-
     #[serde(alias = "PLH")]
     SaltSpring,
-
     #[serde(alias = "PST")]
     Saturna,
-
     Thetis,
-
     #[serde(alias = "TSA")]
     Vancouver,
-
     #[serde(alias = "SWB")]
     Victoria,
 }
@@ -41,9 +34,11 @@ pub enum Area {
     Copy, Clone, Debug, Deserialize, Display, EnumString, Eq, EnumIter, Hash, Ord, PartialEq, PartialOrd, Serialize,
 )]
 pub enum Terminal {
+    BTW, // Brentwood Bay
     CFT, // Crofton
     CHM, // Chemainus
     FUL, // Salt Spring Island (Fulford Harbour)
+    MIL, // Mill Bay
     PEN, // Penelakut Island (Telegraph Harbour)
     PLH, // Salt Spring Island (Long Harbour)
     POB, // Pender Island (Otter Bay)
@@ -127,10 +122,12 @@ pub struct Schedule {
 impl Area {
     pub fn long_name(&self) -> &'static str {
         match *self {
+            Area::Brentwood => "Brentwood",
             Area::Chemainus => "Chemainus",
             Area::Crofton => "Crofton",
             Area::Galiano => "Galiano Island",
             Area::Mayne => "Mayne Island",
+            Area::MillBay => "Mill Bay",
             Area::Pender => "Pender Island",
             Area::Penelakut => "Penelakut Island",
             Area::SaltSpring => "Salt Spring Island",
@@ -143,10 +140,12 @@ impl Area {
 
     pub fn short_name(&self) -> &'static str {
         match *self {
+            Area::Brentwood => "Brentwood",
             Area::Chemainus => "Chemainus",
             Area::Crofton => "Crofton",
             Area::Galiano => "Galiano",
             Area::Mayne => "Mayne",
+            Area::MillBay => "Mill Bay",
             Area::Pender => "Pender",
             Area::Penelakut => "Penelakut",
             Area::SaltSpring => "Salt Spring",
@@ -169,9 +168,11 @@ impl Area {
 impl Terminal {
     pub fn name(&self) -> &'static str {
         match *self {
+            Terminal::BTW => "Brentwood Bay",
             Terminal::CFT => "Crofton",
             Terminal::CHM => "Chemainus",
             Terminal::FUL => "Fulford Harbour",
+            Terminal::MIL => "Mill Bay",
             Terminal::PEN => "Telegraph Harbour",
             Terminal::PLH => "Long Harbour",
             Terminal::POB => "Otter Bay",
@@ -187,8 +188,10 @@ impl Terminal {
 
     pub fn area(&self) -> Area {
         match *self {
+            Terminal::BTW => Area::Brentwood,
             Terminal::CFT => Area::Crofton,
             Terminal::FUL => Area::SaltSpring,
+            Terminal::MIL => Area::MillBay,
             Terminal::PLH => Area::SaltSpring,
             Terminal::POB => Area::Pender,
             Terminal::PSB => Area::Galiano,

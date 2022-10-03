@@ -42,6 +42,7 @@ pub static ROUTE5_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
 pub static OTHER_ROUTES_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
     HashSet::from_iter(
         [
+            TerminalPair { from: Terminal::BTW, to: Terminal::MIL },
             TerminalPair { from: Terminal::CHM, to: Terminal::PEN },
             TerminalPair { from: Terminal::CHM, to: Terminal::THT },
             TerminalPair { from: Terminal::FUL, to: Terminal::SWB },

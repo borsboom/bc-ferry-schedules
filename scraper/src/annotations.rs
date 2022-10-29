@@ -208,16 +208,34 @@ impl Annotations {
                                 schedule_year_date(Month::August, 1)?,
                                 schedule_year_date(Month::September, 5)?,
                             ]),
+                        "* Except on Aug 7 & Sep 4" =>
+                            self.star.except.extend([
+                                schedule_year_date(Month::August, 7)?,
+                                schedule_year_date(Month::September, 4)?,
+                            ]),
+                        "* Except on Oct 9" =>
+                            self.star.except.extend([
+                                schedule_year_date(Month::October, 9)?,
+                            ]),
                         "* Except on October 10, 2022" =>
                             self.star.except.extend([
                                 date!(2022 - 10 - 10),
                             ]),
+                        "* Except on Apr 10" =>
+                            self.star.except.extend([schedule_year_date(Month::April, 10)?]),
                         "* Except on April 14th" =>
                             self.star.except.extend([schedule_year_date(Month::April, 14)?]),
                         "** Except on April 14th" =>
                             self.star2.except.extend([schedule_year_date(Month::April, 14)?]),
                         "* Except on April 18th" =>
                             self.star.except.extend([schedule_year_date(Month::April, 18)?]),
+                        "* Except on May 22" =>
+                            self.star.except.extend([schedule_year_date(Month::May, 22)?]),
+                        "** Except on Apr 6 & 10" =>
+                            self.star2.except.extend([
+                                schedule_year_date(Month::April, 6)?,
+                                schedule_year_date(Month::April, 10)?,
+                            ]),
                         "** Except on July 3, 17, 31 August 14, 28" |
                         "** Except on Jul 3, 17, 31, Aug 14 & 28" =>
                             self.star2.except.extend([
@@ -291,6 +309,8 @@ impl Annotations {
                             ]),
                         "* Only on April 14th" =>
                             self.star.only.extend([schedule_year_date(Month::April, 14)?]),
+                        "* Only on Apr 10" =>
+                            self.star.only.extend([schedule_year_date(Month::April, 10)?]),
                         "On April 18th the Holiday Monday schedule is in effect" if annotation_is_exclamation =>
                             self.star_holiday_monday_extend(&[schedule_year_date(Month::April, 18)?]),
                         "* On April 18th the Holiday Monday schedule is in effect" =>

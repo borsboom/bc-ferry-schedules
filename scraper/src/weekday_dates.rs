@@ -48,6 +48,7 @@ impl WeekdayDates {
             let from_year = date_range.from.year();
             // TODO: generalize these rules (e.g. ` & ` and ` to ` become `, ` and `-`)
             let normalized_text = match orig_text {
+                "Apr 6 only" => "Apr 6",
                 "Dec 22 & 27 only" => "Dec 22, Dec 27",
                 "Dec 22, 27" => "Dec 22, Dec 27",
                 "Dec 23 & 30 only" => "Dec 23, Dec 30",
@@ -69,12 +70,17 @@ impl WeekdayDates {
                 "Mon-Thu* & Hol Mon" => "Mon-Thu*, Hol Mon",
                 "Mon* to Sat" => "Mon*-Sat",
                 "Mon*-Thu and Jan 21 & 28" => "Mon*-Thu, Jan 21, Jan 28",
+                "Sat-Sun & May 22 only" => "Sat-Sun, May 22",
+                "Sat-Sun & Oct 9 only" => "Sat-Sun, Oct 9",
                 "Sat, Sun & Hol Mon" => "Sat, Sun, Hol Mon",
+                "Sat, Sun & Oct 10 only" => "Sat, Sun, Oct 10",
                 "Sep 12, 26 & Oct 10" => "Sep 12, Sep 26, Oct 10",
                 "Sep 19 & Oct 3" => "Sep 19, Oct 3",
+                "Sun & Aug 7 & Sep 4 only" => "Sun, Aug 7, Sep 4",
                 "Sun & Hol Mon" => "Sun, Hol Mon",
+                "Sun & May 22 only" => "Sun, May 22",
                 "Sun & Oct 10 only" => "Sun, Oct 10",
-                "Sat, Sun & Oct 10 only" => "Sat, Sun, Oct 10",
+                "Sun & Oct 9 only" => "Sun, Oct 9",
                 text => text,
             };
             for split_text in normalized_text.split(',').map(|s| s.trim().to_lowercase()) {
@@ -98,6 +104,13 @@ impl WeekdayDates {
                             result.day_only(Weekday::Monday, &annotations.holiday_monday)
                         }
                     }
+                    "sun-thu" => result.days([
+                        Weekday::Sunday,
+                        Weekday::Monday,
+                        Weekday::Tuesday,
+                        Weekday::Wednesday,
+                        Weekday::Thursday,
+                    ]),
                     "mon-wed" => result.days([Weekday::Monday, Weekday::Tuesday, Weekday::Wednesday]),
                     "mon-thu" => {
                         result.days([Weekday::Monday, Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday])
@@ -117,6 +130,7 @@ impl WeekdayDates {
                         Weekday::Friday,
                         Weekday::Saturday,
                     ]),
+                    "tue-thu" => result.days([Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday]),
                     "thu-fri" => result.days([Weekday::Thursday, Weekday::Friday]),
                     "thu-sat" => result.days([Weekday::Thursday, Weekday::Friday, Weekday::Saturday]),
                     "fri-sun" => result.days([Weekday::Friday, Weekday::Saturday, Weekday::Sunday]),
@@ -125,6 +139,9 @@ impl WeekdayDates {
                     "sat**" => result.day_restriction(Weekday::Saturday, &annotations.star2),
                     "sun**" => result.day_restriction(Weekday::Sunday, &annotations.star2),
                     "sun***" => result.day_restriction(Weekday::Sunday, &annotations.star3),
+                    "mon*" => {
+                        result.day_restriction(Weekday::Monday, &annotations.star);
+                    }
                     "mon*-thu" => {
                         result.day_restriction(Weekday::Monday, &annotations.star);
                         result.days([Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday]);

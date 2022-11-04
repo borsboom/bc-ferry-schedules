@@ -334,7 +334,7 @@ impl<'a> SailingsModel<'a> {
                         </a>
                         { " before you depart." }
                         { " If you find a mistake, send feedback to " }
-                        <a class="link-secondary" href="mailto:ferries@borsboom.io" target="_blank">{ "ferries@borsboom.io" }</a>
+                        <a class="link-secondary" href="mailto:emanuel@borsboom.io" target="_blank">{ "emanuel@borsboom.io" }</a>
                         { "." }
                     </div>
                 </small>

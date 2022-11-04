@@ -176,7 +176,7 @@ fn footer_html() -> Html {
                 <a class="link-dark" href="https://github.com/borsboom/bc-ferry-schedules" target="_blank">{ "Github" }</a>
                 { ". " }
                 { "Send feedback to " }
-                <a class="link-dark" href="mailto:ferries@borsboom.io" target="_blank">{ "ferries@borsboom.io" }</a>
+                <a class="link-dark" href="mailto:emanuel@borsboom.io" target="_blank">{ "emanuel@borsboom.io" }</a>
                 { "." }
             </div>
             <div class="text-muted">{ "This site is independently operated and is not affiliated with British Columbia Ferry Services Inc." }</div>

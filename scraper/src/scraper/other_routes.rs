@@ -118,11 +118,15 @@ fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<Sch
 }
 
 fn parse_date_range_from_schedule_path_query(schedule_path_query: &str) -> Result<DateRange> {
-    let text = &regex!("departureDate=([0-9-]*)")
+    let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R9_([0-9_]*)")
         .captures(schedule_path_query)
-        .ok_or_else(|| anyhow!("Failed to find departureDate in schedule path/query: {:?}", schedule_path_query))?[1];
-    DateRange::parse(text, format_description!("[year][month][day]"), "-")
-        .with_context(|| format!("Failed to parse schedule path/query date range: {:?}", text))
+        .ok_or_else(|| anyhow!("Failed to find departureDate in schedule path/query: {:?}", schedule_path_query))?;
+    let (text, parsed) = match (captures.get(1), captures.get(2)) {
+        (Some(text), _) => (text, DateRange::parse(text.as_str(), format_description!("[year][month][day]"), "-")),
+        (None, Some(text)) => (text, DateRange::parse(text.as_str(), format_description!("[year][month][day]"), "_")),
+        (None, None) => panic!("Expect capture to be available when regex matches"),
+    };
+    parsed.with_context(|| format!("Failed to parse schedule path/query date range: {:?}", text))
 }
 
 async fn scrape_schedule(
@@ -136,6 +140,17 @@ async fn scrape_schedule(
     let inner = async {
         let date_range = parse_date_range_from_schedule_path_query(schedule_path_query)
             .with_context(|| format!("Failed to parse date from schedule path/query: {:?}", schedule_path_query))?;
+        if schedule_path_query.contains("departureDateCode=R9_") {
+            // TODO: Remove once we can parse the re-worked route 9 schedules
+            return Ok(Some(Schedule {
+                terminal_pair,
+                date_range,
+                items: vec![],
+                source_url: source_url.to_string(),
+                refreshed_at: now_vancouver(),
+                alerts: vec![Alert {message: "THIS SCHEDULE IS INCOMPLETE!  BC Ferries has re-worked their Route 9 schedule pages and the scraper needs to be updated to understand them.  I'm working on it!".to_string(), level: AlertLevel::Danger}],
+            }));
+        }
         if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
         }
@@ -155,6 +170,7 @@ async fn scrape_schedule(
             items,
             source_url: source_url.to_string(),
             refreshed_at: now_vancouver(),
+            alerts: vec![],
         })) as Result<_>
     };
     inner

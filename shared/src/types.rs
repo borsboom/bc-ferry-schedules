@@ -110,6 +110,19 @@ pub struct ScheduleItem {
     pub notes: HashMap<Cow<'static, str>, DateRestriction>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum AlertLevel {
+    Info,
+    Warning,
+    Danger,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Alert {
+    pub message: String,
+    pub level: AlertLevel,
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Schedule {
     pub terminal_pair: TerminalPair,
@@ -117,6 +130,9 @@ pub struct Schedule {
     pub items: Vec<ScheduleItem>,
     pub source_url: String,
     pub refreshed_at: OffsetDateTime,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub alerts: Vec<Alert>,
 }
 
 impl Area {

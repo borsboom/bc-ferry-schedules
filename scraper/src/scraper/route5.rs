@@ -105,6 +105,7 @@ fn parse_schedule(
                 items,
                 source_url: format!("{}#{}", source_url, terminal_pair),
                 refreshed_at: now_vancouver(),
+                alerts: vec![],
             }))
         } else {
             Ok(None)

@@ -149,6 +149,6 @@ pub fn area_sailings_for_date(
         area_schedules_vec.sort_unstable_by(|(sa, va), (sb, vb)| {
             va.len().cmp(&vb.len()).reverse().then_with(|| sa.terminal_pair.cmp(&sb.terminal_pair))
         });
-        area_schedules_vec.into_iter().filter(|(_, v)| !v.is_empty()).collect()
+        area_schedules_vec.into_iter().filter(|(s, v)| !v.is_empty() || !s.alerts.is_empty()).collect()
     })
 }

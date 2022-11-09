@@ -60,6 +60,23 @@ fn stop_html(stop: &Stop) -> Html {
     }
 }
 
+fn alert_row_html(alert: &Alert) -> Html {
+    let alert_class = match &alert.level {
+        AlertLevel::Info => "alert-info",
+        AlertLevel::Warning => "alert-warning",
+        AlertLevel::Danger => "alert-danger",
+    };
+    html! {
+        <tr>
+            <td colspan="3" class="border-bottom-0">
+                <div class={ classes!("alert", alert_class, "mb-0") }>
+                    { &alert.message }
+                </div>
+            </td>
+        </tr>
+    }
+}
+
 fn sailing_row_html(sailing: &SailingWithNotes) -> Html {
     let main_td_class = (!sailing.notes.is_empty()).then_some("border-bottom-0");
     let all_td_class = sailing.sailing.is_thrufare().then_some("text-muted");
@@ -121,14 +138,15 @@ fn schedule_sailings_rows_html(first: bool, last: bool, schedule: &Schedule, sai
                 </thead>
             }
         } else {
-            html! { <>
+            html! {
                 <tbody class="table-dark">
                     { schedule_sailings_header_row_html(schedule) }
                 </tbody>
-            </> }
+            }
         }}
         <tbody>
-            { for sailings.iter().map(sailing_row_html) }
+        { for schedule.alerts.iter().map(alert_row_html) }
+        { for sailings.iter().map(sailing_row_html) }
         </tbody>
         <tbody>
             <tr>

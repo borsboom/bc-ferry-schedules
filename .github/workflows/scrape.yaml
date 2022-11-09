@@ -8,13 +8,12 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: extractions/setup-just@v1
       - uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build.yaml
           branch: main
-          check_artifacts: true
       - run: chmod a+x release/ferrysched_scraper
       - env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

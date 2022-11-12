@@ -1,6 +1,8 @@
 use crate::imports::*;
 use crate::types::*;
 
+use tempfile::NamedTempFile;
+
 static S3_CACHE_MAX_AGE: Lazy<Duration> = Lazy::new(|| Duration::hours(12));
 
 async fn upload_to_s3(
@@ -60,10 +62,17 @@ pub async fn write_output(options: &Options, schedules: &[Schedule]) -> Result<(
         } else {
             if let Some(output_file_path) = &options.output_file {
                 info!("Writing schedules JSON to: {:?}", output_file_path);
-                let mut output_file = fs::File::create(&output_file_path)
-                    .with_context(|| format!("Failed to create schedules JSON output file: {:?}", output_file_path))?;
-                serde_json::to_writer(&mut output_file, &schedules)
+                let mut temp_file = NamedTempFile::new_in(
+                    output_file_path
+                        .parent()
+                        .unwrap_or(&std::env::current_dir().context("Failed to get current directory")?),
+                )
+                .with_context(|| format!("Failed to create schedules JSON output file: {:?}", output_file_path))?;
+                serde_json::to_writer(&mut temp_file, &schedules)
                     .with_context(|| format!("Failed to write schedules JSON to file: {:?}", output_file_path))?;
+                temp_file
+                    .persist(output_file_path)
+                    .context(format!("Failed to persist temporary file to: {:?}", output_file_path))?;
             }
             if let Some(bucket) = &options.output_s3_bucket {
                 let aws_config = aws_config::from_env().load().await;

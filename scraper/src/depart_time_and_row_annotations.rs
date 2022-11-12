@@ -3,6 +3,7 @@ use crate::imports::*;
 use crate::macros::*;
 use crate::utils::*;
 
+#[derive(Debug)]
 pub struct DepartTimeAndRowAnnotations {
     pub time: Time,
     pub row_dates: AnnotationDates,
@@ -57,6 +58,7 @@ impl DepartTimeAndRowAnnotations {
             row_notes.extend(annotations.plus_text.clone().into_iter());
             plus_suffix_re.replace(orig_text, "$1")
         } else {
+            row_dates.extend(&annotations.all);
             Cow::from(orig_text)
         };
         let depart_time = parse_schedule_time(&text)

@@ -38,13 +38,13 @@ fn terminal_from_schedule_stop_text(stop_text: &str) -> Result<Terminal> {
     let stop_text = stop_text.to_lowercase();
     match &stop_text[..] {
         "galiano" | "galiano island (sturdies bay)" => Ok(Terminal::PSB),
-        "mayne" | "mayne island (village bay)" => Ok(Terminal::PVB),
+        "mayne" | "mayne island (village bay)" | "mayne island (village bay" => Ok(Terminal::PVB),
         "pender" | "pender island (otter bay)" => Ok(Terminal::POB),
         "penelakut island (telegraph harbour)" => Ok(Terminal::PEN),
         "salt spring" | "salt spring island (long harbour)" => Ok(Terminal::PLH),
         "saturna" | "saturna island (lyall harbour)" => Ok(Terminal::PST),
         "thetis island (preedy harbour)" => Ok(Terminal::THT),
-        "victoria (swartz bay)" => Ok(Terminal::PLH),
+        "victoria (swartz bay)" => Ok(Terminal::SWB),
         _ => Err(anyhow!("Unknown schedule stop name: {:?}", stop_text)),
     }
 }
@@ -53,6 +53,9 @@ fn parse_stop_schedule_text(stop_text: &str) -> Result<Stop> {
     let inner = || {
         if let Some(captures) = regex!(r"(?i)^transfer( at)? (.*)$").captures(stop_text) {
             Ok(Stop { type_: StopType::Transfer, terminal: terminal_from_schedule_stop_text(&captures[2])? })
+                as Result<_>
+        } else if let Some(captures) = regex!(r"(?i)^thru fare( at)? (.*)$").captures(stop_text) {
+            Ok(Stop { type_: StopType::Thrufare, terminal: terminal_from_schedule_stop_text(&captures[2])? })
                 as Result<_>
         } else {
             let stop_text = &regex!(r"(?i)^(stop( at)? )?(.*)$").captures(stop_text).expect("stop text to match")[3];

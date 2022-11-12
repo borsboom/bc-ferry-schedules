@@ -92,13 +92,13 @@ impl WeekdayDates {
                     continue;
                 }
                 match &split_text[..] {
-                    "mon" => result.day(Weekday::Monday),
-                    "tue" => result.day(Weekday::Tuesday),
-                    "wed" => result.day(Weekday::Wednesday),
-                    "thu" => result.day(Weekday::Thursday),
-                    "fri" => result.day(Weekday::Friday),
-                    "sat" => result.day(Weekday::Saturday),
-                    "sun" => result.day(Weekday::Sunday),
+                    "mon" | "mondays" => result.day(Weekday::Monday),
+                    "tue" | "tuesdays" => result.day(Weekday::Tuesday),
+                    "wed" | "wednesdays" => result.day(Weekday::Wednesday),
+                    "thu" | "thursdays" => result.day(Weekday::Thursday),
+                    "fri" | "fridays" => result.day(Weekday::Friday),
+                    "sat" | "saturdays" => result.day(Weekday::Saturday),
+                    "sun" | "sundays" => result.day(Weekday::Sunday),
                     "hol mon" => {
                         if !result.map.get(&Weekday::Monday).map(|ad| ad.is_always()).unwrap_or(false) {
                             result.day_only(Weekday::Monday, &annotations.holiday_monday)

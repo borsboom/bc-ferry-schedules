@@ -8,6 +8,35 @@ use crate::types::*;
 use crate::utils::*;
 use crate::weekday_dates::*;
 
+#[derive(Debug)]
+struct ScheduleQuery {
+    pub date_range: DateRange,
+    pub is_route9: bool,
+}
+
+impl ScheduleQuery {
+    fn parse(schedule_path_query: &str) -> Result<ScheduleQuery> {
+        let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R9_([0-9_]*)")
+            .captures(schedule_path_query)
+            .ok_or_else(|| {
+                anyhow!(
+                    "Failed to find departureDate or departureDateCode=R9 in schedule path/query: {:?}",
+                    schedule_path_query
+                )
+            })?;
+        let (text, separator, is_route9) = match (captures.get(1), captures.get(2)) {
+            (Some(text), _) => (text, "-", false),
+            (None, Some(text)) => (text, "_", true),
+            (None, None) => panic!("Expect capture to be available when regex matches"),
+        };
+        Ok(ScheduleQuery {
+            date_range: DateRange::parse(text.as_str(), format_description!("[year][month][day]"), separator)
+                .with_context(|| format!("Failed to parse schedule path/query date range: {:?}", text))?,
+            is_route9,
+        })
+    }
+}
+
 fn parse_annotations(
     depart_times_annotations_texts: Vec<String>,
     date_range: &DateRange,
@@ -49,13 +78,19 @@ fn parse_depart_times_and_annotations(
 
 fn parse_duration(duration_text: &str) -> Result<Duration> {
     let inner = || {
-        let duration_captures = regex!(r"^(\d+)h (\d+)m$")
+        let duration_captures = regex!(r"^((\d+)h)? ?((\d+)m)?$")
             .captures(duration_text)
             .ok_or_else(|| anyhow!("Invalid duration format: {:?}", duration_text))?;
-        let duration = Duration::minutes(
-            duration_captures[1].parse::<i64>().expect("duration hours to parse to integer") * 60
-                + duration_captures[2].parse::<i64>().expect("duration minutes to parse to integer"),
-        );
+        let duration = match (duration_captures.get(2), duration_captures.get(4)) {
+            (None, None) => bail!("Expect minutes and/or hours in duration"),
+            (hours_text, minutes_text) => Duration::minutes(
+                hours_text.map(|m| m.as_str().parse::<i64>().expect("duration hours to parse to integer")).unwrap_or(0)
+                    * 60
+                    + minutes_text
+                        .map(|m| m.as_str().parse::<i64>().expect("duration minutes to parse to integer"))
+                        .unwrap_or(0),
+            ),
+        };
         Ok(duration) as Result<_>
     };
     inner().with_context(|| format!("Failed to parse duration: {:?}", duration_text))
@@ -70,7 +105,48 @@ fn parse_stops(stops_texts: Vec<String>) -> Result<Vec<Stop>> {
     inner().with_context(|| format!("Failed to parse stops: {:?}", stops_texts))
 }
 
-fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
+fn parse_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
+    let inner = || {
+        let mut items = Vec::new();
+        for day_row_elem in table_elem.select(selector!("thead tr")) {
+            let weekday_text = day_row_elem
+                .value()
+                .attr("data-schedule-day")
+                .ok_or_else(|| anyhow!("Expect day row element to have 'data-schedule-day' attribute"))?;
+            let weekday_sailings_tbody_elem = day_row_elem
+                .parent_element()
+                .expect("weekday row element to have parent")
+                .next_sibling_element()
+                .ok_or_else(|| anyhow!("Expect schedule row thead element after weekday row element"))?;
+            for sailing_row_elem in weekday_sailings_tbody_elem.select(selector!("tr.schedule-table-row")) {
+                let cell_elems: Vec<_> = sailing_row_elem.select(selector!("td")).collect();
+                ensure!(
+                    cell_elems.len() == 6,
+                    "Row should have six cells: {:?}",
+                    cell_elems.iter().map(element_text).collect::<Vec<_>>()
+                );
+                let (annotations, depart_times_texts) = parse_annotations(element_texts(&cell_elems[1]), date_range)?;
+                let depart_times = parse_depart_times_and_annotations(depart_times_texts, &annotations)?;
+                ensure!(depart_times.len() == 1, "Expect exactly one depart time in row");
+                let depart_time = depart_times.into_iter().next().expect("at least one depart time in row");
+                let weekday_dates = WeekdayDates::parse(weekday_text, &annotations, date_range)?;
+                let arrive_time = parse_schedule_time(&element_text(&cell_elems[2]))?;
+                let stops = parse_stops(element_texts(&cell_elems[4]))?;
+                let weekdays = weekday_dates.to_date_restrictions(&depart_time.row_dates);
+                let notes = AnnotationDates::map_to_date_restrictions_by_weekdays(depart_time.row_notes, &weekdays);
+                items.push(ScheduleItem {
+                    sailing: Sailing { depart_time: depart_time.time, arrive_time, stops: stops.clone() },
+                    weekdays,
+                    notes,
+                });
+            }
+        }
+        ScheduleItem::merge_items(items)
+    };
+    inner().context("Failed to parse other route schedule table")
+}
+
+fn parse_non_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
     let inner = || {
         let mut last_row_weekday_dates = WeekdayDates::new();
         let mut items = Vec::new();
@@ -117,40 +193,17 @@ fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<Sch
     inner().context("Failed to parse other route schedule table")
 }
 
-fn parse_date_range_from_schedule_path_query(schedule_path_query: &str) -> Result<DateRange> {
-    let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R9_([0-9_]*)")
-        .captures(schedule_path_query)
-        .ok_or_else(|| anyhow!("Failed to find departureDate in schedule path/query: {:?}", schedule_path_query))?;
-    let (text, parsed) = match (captures.get(1), captures.get(2)) {
-        (Some(text), _) => (text, DateRange::parse(text.as_str(), format_description!("[year][month][day]"), "-")),
-        (None, Some(text)) => (text, DateRange::parse(text.as_str(), format_description!("[year][month][day]"), "_")),
-        (None, None) => panic!("Expect capture to be available when regex matches"),
-    };
-    parsed.with_context(|| format!("Failed to parse schedule path/query date range: {:?}", text))
-}
-
 async fn scrape_schedule(
     options: &Options,
     cache: &Cache<'_>,
     terminal_pair: TerminalPair,
-    schedule_path_query: &str,
+    schedule_path_query_text: &str,
     today: Date,
 ) -> Result<Option<Schedule>> {
-    let source_url = format!("{}{}", BCFERRIES_BASE_URL, schedule_path_query);
+    let source_url = format!("{}{}", BCFERRIES_BASE_URL, schedule_path_query_text);
     let inner = async {
-        let date_range = parse_date_range_from_schedule_path_query(schedule_path_query)
-            .with_context(|| format!("Failed to parse date from schedule path/query: {:?}", schedule_path_query))?;
-        if schedule_path_query.contains("departureDateCode=R9_") {
-            // TODO: Remove once we can parse the re-worked route 9 schedules
-            return Ok(Some(Schedule {
-                terminal_pair,
-                date_range,
-                items: vec![],
-                source_url: source_url.to_string(),
-                refreshed_at: now_vancouver(),
-                alerts: vec![Alert {message: "THIS SCHEDULE IS INCOMPLETE!  BC Ferries has re-worked their Route 9 schedule pages and the scraper needs to be updated to understand them.  I'm working on it!".to_string(), level: AlertLevel::Danger}],
-            }));
-        }
+        let ScheduleQuery { date_range, is_route9 } = ScheduleQuery::parse(schedule_path_query_text)
+            .with_context(|| format!("Failed to schedule path/query: {:?}", schedule_path_query_text))?;
         if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
         }
@@ -163,7 +216,11 @@ async fn scrape_schedule(
             .select(selector!("div.seasonal-schedule-wrapper table"))
             .next()
             .ok_or_else(|| anyhow!("Missing table element in schedule"))?;
-        let items = parse_table(table_elem, &date_range)?;
+        let items = if is_route9 {
+            parse_route9_table(table_elem, &date_range)?
+        } else {
+            parse_non_route9_table(table_elem, &date_range)?
+        };
         Ok(Some(Schedule {
             terminal_pair,
             date_range,
@@ -195,7 +252,7 @@ pub async fn scrape_other_route_schedules(
             .with_context(|| format!("Failed to download base schedule HTML from: {:?}", base_url))?;
         let schedule_path_query_elems = base_document.select(selector!("div#dateRangeModal a"));
         let mut schedules = Vec::new();
-        for schedule_path_query_elem in schedule_path_query_elems {
+        for schedule_path_query_elem in schedule_path_query_elems.take(1) {
             let schedule_path_query = schedule_path_query_elem.value().attr("href").ok_or_else(|| {
                 anyhow!("Missing schedule path/query in date range link element: {}", schedule_path_query_elem.html())
             })?;

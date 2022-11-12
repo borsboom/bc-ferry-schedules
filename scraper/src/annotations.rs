@@ -23,6 +23,7 @@ pub struct Annotations {
     pub hash_text: HashMap<Cow<'static, str>, AnnotationDates>,
     pub plus: AnnotationDates,
     pub plus_text: HashMap<Cow<'static, str>, AnnotationDates>,
+    pub all: AnnotationDates,
 }
 
 fn text_date_restriction<'a, T: Into<Cow<'static, str>>>(
@@ -118,6 +119,7 @@ impl Annotations {
             hash_text: HashMap::new(),
             plus: AnnotationDates::new(),
             plus_text: HashMap::new(),
+            all: AnnotationDates::new(),
         }
     }
 
@@ -140,9 +142,13 @@ impl Annotations {
         let mut annotation_is_exclamation = false;
         for annotation_text in annotation_texts {
             let mut inner = || {
+                let annotation_text = match annotation_text.as_ref() {
+                    "Only on Dec 23 & 30" => "Only on Dec 23, Dec 30",
+                    text => text,
+                };
                 let mut next_annotation_is_exclamation = false;
                 if let Some(captures) =
-                    regex!(r"(?i)\*(\d+:\d+ [AP]M) (Not Available|Only) on: (.*)\*").captures(annotation_text.as_ref())
+                    regex!(r"(?i)^\*(\d+:\d+ [AP]M) (Not Available|Only) on: (.*)\*").captures(annotation_text.as_ref())
                 {
                     let time_text = &captures[1];
                     let time = Time::parse(
@@ -156,12 +162,30 @@ impl Annotations {
                     let dates_hashset = match &captures[2] {
                         "Not Available" => &mut dates.except,
                         "Only" => &mut dates.only,
-                        other => bail!("Expect \"Only\" or \"Not Available\" in: {:?}", other),
+                        other => bail!("Expect \"Not Available\" or \"Only\" in: {:?}", other),
                     };
                     for date_text in captures[3].split(',').map(|s| s.trim()) {
                         let parsed_date = Date::parse(
                             &format!("{} {}", date_text, from_year),
                             format_description!("[day padding:none] [month repr:short case_sensitive:false] [year]"),
+                        )
+                        .with_context(|| format!("Failed to parse date: {:?}", date_text))?;
+                        let date = date_range.make_year_within(parsed_date).with_context(|| {
+                            format!("Date is outside date range of schedule ({}): {:?}", date_range, parsed_date)
+                        })?;
+                        dates_hashset.insert(date);
+                    }
+                } else if let Some(captures) = regex!(r"(?i)^(Except|Only) on (.*)").captures(annotation_text.as_ref())
+                {
+                    let dates_hashset = match &captures[1] {
+                        "Except" => &mut self.all.except,
+                        "Only" => &mut self.all.only,
+                        other => bail!("Expect \"Except\" or \"Only\" in: {:?}", other),
+                    };
+                    for date_text in captures[2].split(&[',', '&']).map(|s| s.trim()) {
+                        let parsed_date = Date::parse(
+                            &format!("{} {}", date_text, from_year),
+                            format_description!("[month repr:short case_sensitive:false] [day padding:none] [year]"),
                         )
                         .with_context(|| format!("Failed to parse date: {:?}", date_text))?;
                         let date = date_range.make_year_within(parsed_date).with_context(|| {

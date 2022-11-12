@@ -318,7 +318,11 @@ impl<'a> SailingsModel<'a> {
                         { if is_reservable { html! {
                             <span class="text-nowrap">
                                 <a href={ BCFERRIES_HOME_URL } target="_blank">{ "Reservations" }</a>
-                                { " are recommended for direct sailings." }
+                                { if has_thrufares {
+                                    " are recommended for direct sailings."
+                                } else {
+                                    " are recommended."
+                                }}
                             </span>
                         }} else {
                             html! {}

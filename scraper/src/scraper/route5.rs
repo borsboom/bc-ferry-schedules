@@ -148,7 +148,7 @@ pub async fn scrape_route5_schedules(options: &Options, cache: &Cache<'_>, today
                 schedules.extend(opt_schedule);
             }
         }
-        ensure!(!schedules.is_empty(), "Failed to find any schedule elements");
+        ensure!(!found_terminal_pairs.is_empty(), "Failed to find any schedule elements");
         Ok(schedules) as Result<_>
     };
     inner.await.with_context(|| format!("Failed to scrape route 5 schedules from: {:?}", ROUTE5_SCHEDULES_URL))

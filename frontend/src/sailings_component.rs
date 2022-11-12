@@ -300,7 +300,12 @@ impl<'a> SailingsModel<'a> {
             }
         };
         let is_reservable = self.area_pair.is_reservable();
-        let has_thrufares = self.area_pair.has_thrufares();
+        let has_thrufares = match &self.sailings_state_model {
+            SailingsStateModel::Sailings(schedule_sailings) => {
+                schedule_sailings.iter().any(|(_, a)| a.iter().any(|b| b.sailing.is_thrufare()))
+            }
+            _ => false,
+        };
         html! { <>
             <div class="row mt-4">
                 <div class="col-12 col-md-8 col-lg-6">

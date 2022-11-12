@@ -240,10 +240,6 @@ impl AreaPair {
     pub fn is_reservable(&self) -> bool {
         self.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS) && self.includes_terminal(Terminal::TSA)
     }
-
-    pub fn has_thrufares(&self) -> bool {
-        AREA_PAIR_TERMINAL_PAIRS.get(self).map(|tps| tps.iter().any(|tp| tp.has_thrufares())).unwrap_or(false)
-    }
 }
 
 impl TerminalPair {
@@ -270,10 +266,6 @@ impl TerminalPair {
 
     pub fn includes_any_terminal(&self, terminals: &HashSet<Terminal>) -> bool {
         terminals.contains(&self.from) || terminals.contains(&self.to)
-    }
-
-    pub fn has_thrufares(&self) -> bool {
-        self.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS) && self.includes_terminal(Terminal::TSA)
     }
 
     pub fn swapped(&self) -> TerminalPair {

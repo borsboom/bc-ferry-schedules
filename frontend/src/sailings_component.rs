@@ -235,7 +235,7 @@ impl<'a> SailingsModel<'a> {
         let last_schedule_index = schedule_sailings.len() - 1;
         html! { <>
             <div>
-                <h6>{ self.view_date.format(format_description!("[weekday], [day padding:none] [month repr:long], [year]")).expect("friendly date to format") }</h6>
+                <h6>{ self.view_date.format(format_description!("[weekday], [day padding:none] [month repr:long], [year]")).expect("Expect friendly date to format") }</h6>
             </div>
             <table class="table table-light mb-0">
                 { for schedule_sailings.iter().enumerate().map(|(index, (schedule, sailings))|
@@ -386,7 +386,7 @@ impl FormModel {
                         Route::Sailings,
                         SailingsQuery { from: Some(area_pair.from), to: Some(area_pair.to), date: None },
                     )
-                    .expect("history to push");
+                    .expect("Expect history to push");
             } else if let Ok(date) = parse_iso8601_date(trimmed_date_input) {
                 if date < today {
                     date_input_state.set(DateInputState {
@@ -400,7 +400,7 @@ impl FormModel {
                             Route::Sailings,
                             SailingsQuery { from: Some(area_pair.from), to: Some(area_pair.to), date: Some(date) },
                         )
-                        .expect("history to push");
+                        .expect("Expect history to push");
                 }
             } else {
                 date_input_state.set(DateInputState {
@@ -424,7 +424,7 @@ impl FormModel {
                     Route::Sailings,
                     SailingsQuery { from: Some(area_pair.from), to: Some(area_pair.to), date: opt_new_date },
                 )
-                .expect("history to push");
+                .expect("Expect history to push");
         })
     }
 
@@ -438,7 +438,7 @@ impl FormModel {
                     Route::Sailings,
                     SailingsQuery { from: Some(area_pair.from), to: Some(area_pair.to), date: query_date },
                 )
-                .expect("history to push");
+                .expect("Expect history to push");
         })
     }
 
@@ -488,7 +488,7 @@ impl FormModel {
                             type="button"
                             class="btn btn-outline-secondary border-0 pe-0"
                             title="Next Date"
-                            onclick={ self.onclick_adjust_date_button_callback(Some(max(self.view_date.previous_day().expect("view date to have previous date"), self.today))) }
+                            onclick={ self.onclick_adjust_date_button_callback(Some(max(self.view_date.previous_day().expect("Expect view date to have previous date"), self.today))) }
                             disabled={ self.date_input_state.value.as_ref().map(|d| *d <= self.today).unwrap_or(true) }
                         >
                             <i class="bi bi-caret-left-fill"/>
@@ -497,7 +497,7 @@ impl FormModel {
                             type="button"
                             class="btn btn-outline-secondary border-0 ps-0"
                             title="Previous Date"
-                            onclick={ self.onclick_adjust_date_button_callback(Some(min(self.view_date.next_day().expect("view date to have next day"), self.max_date))) }
+                            onclick={ self.onclick_adjust_date_button_callback(Some(min(self.view_date.next_day().expect("Expect view date to have next day"), self.max_date))) }
                             disabled={ self.date_input_state.value.as_ref().map(|d| *d >= self.max_date).unwrap_or(true) }
                         >
                             <i class="bi bi-caret-right-fill"/>
@@ -537,8 +537,8 @@ pub fn sailings_component(props: &SailingsProps) -> Html {
         Some(date) if date < today => today,
         Some(date) => date,
     };
-    let history = use_history().expect("history to be available");
-    let schedules_state = use_context::<SchedulesState>().expect("schedules state to be available");
+    let history = use_history().expect("Expect history to be available");
+    let schedules_state = use_context::<SchedulesState>().expect("Expect schedules state to be available");
     let date_input_state = use_state(|| DateInputState {
         input: format_iso8601_date(query_date_or_today),
         value: Ok(query_date_or_today),

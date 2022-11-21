@@ -58,7 +58,8 @@ fn parse_stop_schedule_text(stop_text: &str) -> Result<Stop> {
             Ok(Stop { type_: StopType::Thrufare, terminal: terminal_from_schedule_stop_text(&captures[2])? })
                 as Result<_>
         } else {
-            let stop_text = &regex!(r"(?i)^(stop( at)? )?(.*)$").captures(stop_text).expect("stop text to match")[3];
+            let stop_text =
+                &regex!(r"(?i)^(stop( at)? )?(.*)$").captures(stop_text).expect("Expect stop text to match")[3];
             Ok(Stop { type_: StopType::Stop, terminal: terminal_from_schedule_stop_text(stop_text)? })
         }
     };

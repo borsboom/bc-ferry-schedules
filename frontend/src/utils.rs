@@ -3,7 +3,7 @@ use crate::types::*;
 
 pub fn format_time(time: Time) -> String {
     time.format(format_description!("[hour repr:12 padding:none]:[minute] [period case:lower]"))
-        .expect("friendly time to format")
+        .expect("Expect friendly time to format")
 }
 
 pub fn human_time(time: OffsetDateTime) -> HumanTime {

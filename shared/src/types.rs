@@ -343,7 +343,7 @@ impl DateRange {
             ensure!(
                 self.includes_date_inclusive(fixed_date),
                 "{} is not within date range {}",
-                fixed_date.format(ERROR_DATE_FORMAT).expect("date within year to format"),
+                fixed_date.format(ERROR_DATE_FORMAT).expect("Expect date within year to format"),
                 self,
             );
             Ok(fixed_date)
@@ -351,7 +351,7 @@ impl DateRange {
         inner().with_context(|| {
             format!(
                 "Failed to make date {} within range {}",
-                orig_date.format(ERROR_DATE_FORMAT).expect("date within year to format"),
+                orig_date.format(ERROR_DATE_FORMAT).expect("Expect date within year to format"),
                 self
             )
         })

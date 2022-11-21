@@ -4,4 +4,4 @@ use crate::imports::*;
 pub const EXTRA_HOLIDAY_MONDAYS: &[Date] = &[date!(2022 - 10 - 10)];
 
 pub static HTML_ERROR_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"An error occurred, try again").expect("HTML error regex to parse"));
+    Lazy::new(|| Regex::new(r"An error occurred, try again").expect("Expect HTML error regex to parse"));

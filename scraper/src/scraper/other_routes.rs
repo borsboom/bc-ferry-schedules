@@ -84,10 +84,12 @@ fn parse_duration(duration_text: &str) -> Result<Duration> {
         let duration = match (duration_captures.get(2), duration_captures.get(4)) {
             (None, None) => bail!("Expect minutes and/or hours in duration"),
             (hours_text, minutes_text) => Duration::minutes(
-                hours_text.map(|m| m.as_str().parse::<i64>().expect("duration hours to parse to integer")).unwrap_or(0)
+                hours_text
+                    .map(|m| m.as_str().parse::<i64>().expect("Expect duration hours to parse to integer"))
+                    .unwrap_or(0)
                     * 60
                     + minutes_text
-                        .map(|m| m.as_str().parse::<i64>().expect("duration minutes to parse to integer"))
+                        .map(|m| m.as_str().parse::<i64>().expect("Expect duration minutes to parse to integer"))
                         .unwrap_or(0),
             ),
         };
@@ -115,7 +117,7 @@ fn parse_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Result<
                 .ok_or_else(|| anyhow!("Expect day row element to have 'data-schedule-day' attribute"))?;
             let weekday_sailings_tbody_elem = day_row_elem
                 .parent_element()
-                .expect("weekday row element to have parent")
+                .expect("Expect weekday row element to have parent")
                 .next_sibling_element()
                 .ok_or_else(|| anyhow!("Expect schedule row thead element after weekday row element"))?;
             for sailing_row_elem in weekday_sailings_tbody_elem.select(selector!("tr.schedule-table-row")) {
@@ -128,7 +130,7 @@ fn parse_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Result<
                 let (annotations, depart_times_texts) = parse_annotations(element_texts(&cell_elems[1]), date_range)?;
                 let depart_times = parse_depart_times_and_annotations(depart_times_texts, &annotations)?;
                 ensure!(depart_times.len() == 1, "Expect exactly one depart time in row");
-                let depart_time = depart_times.into_iter().next().expect("at least one depart time in row");
+                let depart_time = depart_times.into_iter().next().expect("Expect at least one depart time in row");
                 let weekday_dates = WeekdayDates::parse(weekday_text, &annotations, date_range)?;
                 let arrive_time = parse_schedule_time(&element_text(&cell_elems[2]))?;
                 let stops = parse_stops(element_texts(&cell_elems[4]))?;

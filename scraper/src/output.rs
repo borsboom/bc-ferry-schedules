@@ -21,7 +21,7 @@ async fn upload_to_s3(
         .acl(aws_sdk_s3::model::ObjectCannedAcl::PublicRead)
         .cache_control(format!("max-age={},public", S3_CACHE_MAX_AGE.whole_seconds()))
         .body(aws_sdk_s3::types::ByteStream::from(
-            serde_json::to_vec(schedules).expect("schedules to serialize to JSON"),
+            serde_json::to_vec(schedules).expect("Expect schedules to serialize to JSON"),
         ))
         .send()
         .await

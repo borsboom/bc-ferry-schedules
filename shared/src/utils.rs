@@ -11,7 +11,7 @@ pub fn now_utc() -> OffsetDateTime {
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 pub fn now_utc() -> OffsetDateTime {
     OffsetDateTime::from_unix_timestamp_nanos(1000000i128 * (stdweb::web::Date::now() as i128))
-        .expect("current timestamp to convert to offset date/time")
+        .expect("Expect current timestamp to convert to offset date/time")
 }
 
 pub fn now_vancouver() -> OffsetDateTime {
@@ -23,7 +23,7 @@ pub fn today_vancouver() -> Date {
 }
 
 pub fn format_iso8601_date(date: Date) -> String {
-    date.format(ISO8601_DATE_FORMAT).expect("iso8601 date to format")
+    date.format(ISO8601_DATE_FORMAT).expect("Expect iso8601 date to format")
 }
 
 pub fn parse_iso8601_date(input: &str) -> Result<Date> {

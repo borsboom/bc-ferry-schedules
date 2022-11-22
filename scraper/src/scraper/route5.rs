@@ -54,7 +54,7 @@ fn parse_items(
             let arrive_time = parse_schedule_time(arrive_time_text)
                 .with_context(|| format!("Failed to parse arrive time: {:?}", arrive_time_text))?;
             let sailing = Sailing { depart_time, arrive_time, stops };
-            let notes = AnnotationDates::map_to_date_restrictions_by_weekdays(row_notes, &weekdays);
+            let notes = annotation_notes_date_restictions(row_notes, weekday_dates.notes, &weekdays);
             items.push(ScheduleItem { sailing, weekdays, notes });
             Ok(()) as Result<_>
         };

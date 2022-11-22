@@ -7,7 +7,7 @@ use crate::utils::*;
 pub struct DepartTimeAndRowAnnotations {
     pub time: Time,
     pub row_dates: AnnotationDates,
-    pub row_notes: HashMap<Cow<'static, str>, AnnotationDates>,
+    pub row_notes: AnnotationNotes,
 }
 
 impl DepartTimeAndRowAnnotations {
@@ -22,43 +22,43 @@ impl DepartTimeAndRowAnnotations {
         let exclamation_hash_suffix_re: &Regex = regex!(r"(?i)(M) ?! ?#$");
         let mut row_dates = AnnotationDates::new();
         let mut row_dates_by_time = HashMap::new();
-        let mut row_notes = HashMap::new();
+        let mut row_notes = AnnotationNotes::new();
         let text = if exclamation_plus_suffix_re.is_match(orig_text) {
-            row_dates.extend(&annotations.exclamation);
-            row_dates.extend(&annotations.plus);
-            row_notes.extend(annotations.exclamation_text.clone().into_iter());
-            row_notes.extend(annotations.plus_text.clone().into_iter());
+            row_dates.extend(&annotations.exclamation_dates);
+            row_dates.extend(&annotations.plus_dates);
+            row_notes.extend(annotations.exclamation_notes.clone());
+            row_notes.extend(annotations.plus_notes.clone());
             exclamation_plus_suffix_re.replace(orig_text, "$1")
         } else if exclamation_hash_suffix_re.is_match(orig_text) {
-            row_dates.extend(&annotations.exclamation);
-            row_dates.extend(&annotations.hash);
-            row_notes.extend(annotations.exclamation_text.clone().into_iter());
-            row_notes.extend(annotations.hash_text.clone().into_iter());
+            row_dates.extend(&annotations.exclamation_dates);
+            row_dates.extend(&annotations.hash_dates);
+            row_notes.extend(annotations.exclamation_notes.clone());
+            row_notes.extend(annotations.hash_notes.clone());
             exclamation_hash_suffix_re.replace(orig_text, "$1")
         } else if exclamation2_suffix_re.is_match(orig_text) {
-            row_notes.extend(annotations.exclamation2_text.clone().into_iter());
+            row_notes.extend(annotations.exclamation2_notes.clone());
             exclamation2_suffix_re.replace(orig_text, "$1")
         } else if star2_suffix_re.is_match(orig_text) {
-            row_dates.extend(&annotations.star2);
+            row_dates.extend(&annotations.star2_dates);
             star2_suffix_re.replace(orig_text, "$1")
         } else if star_suffix_re.is_match(orig_text) {
-            row_dates.extend(&annotations.star);
-            row_dates_by_time.extend(&annotations.star_by_time);
+            row_dates.extend(&annotations.star_dates);
+            row_dates_by_time.extend(&annotations.star_dates_by_time);
             star_suffix_re.replace(orig_text, "$1")
         } else if exclamation_suffix_re.is_match(orig_text) {
-            row_dates.extend(&annotations.exclamation);
-            row_notes.extend(annotations.exclamation_text.clone().into_iter());
+            row_dates.extend(&annotations.exclamation_dates);
+            row_notes.extend(annotations.exclamation_notes.clone());
             exclamation_suffix_re.replace(orig_text, "$1")
         } else if hash_suffix_re.is_match(orig_text) {
-            row_dates.extend(&annotations.hash);
-            row_notes.extend(annotations.hash_text.clone().into_iter());
+            row_dates.extend(&annotations.hash_dates);
+            row_notes.extend(annotations.hash_notes.clone());
             hash_suffix_re.replace(orig_text, "$1")
         } else if plus_suffix_re.is_match(orig_text) {
-            row_dates.extend(&annotations.plus);
-            row_notes.extend(annotations.plus_text.clone().into_iter());
+            row_dates.extend(&annotations.plus_dates);
+            row_notes.extend(annotations.plus_notes.clone());
             plus_suffix_re.replace(orig_text, "$1")
         } else {
-            row_dates.extend(&annotations.all);
+            row_dates.extend(&annotations.all_dates);
             Cow::from(orig_text)
         };
         let depart_time = parse_schedule_time(&text)

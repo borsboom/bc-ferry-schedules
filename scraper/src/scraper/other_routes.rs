@@ -135,7 +135,7 @@ fn parse_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Result<
                 let arrive_time = parse_schedule_time(&element_text(&cell_elems[2]))?;
                 let stops = parse_stops(element_texts(&cell_elems[4]))?;
                 let weekdays = weekday_dates.to_date_restrictions(&depart_time.row_dates);
-                let notes = AnnotationDates::map_to_date_restrictions_by_weekdays(depart_time.row_notes, &weekdays);
+                let notes = annotation_notes_date_restictions(depart_time.row_notes, weekday_dates.notes, &weekdays);
                 items.push(ScheduleItem {
                     sailing: Sailing { depart_time: depart_time.time, arrive_time, stops: stops.clone() },
                     weekdays,
@@ -150,7 +150,7 @@ fn parse_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Result<
 
 fn parse_non_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
     let inner = || {
-        let mut last_row_weekday_dates = WeekdayDates::new();
+        let mut last_row_weekday = WeekdayDates::new();
         let mut items = Vec::new();
         for row_elem in table_elem.select(selector!("tr.schedule-table-row")) {
             let cell_elems: Vec<_> = row_elem.select(selector!("td")).collect();
@@ -169,7 +169,7 @@ fn parse_non_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Res
             let depart_times = parse_depart_times_and_annotations(depart_times_texts, &annotations)?;
             let day_text = element_text(&cell_elems[1]);
             let weekday_dates = if day_text.is_empty() {
-                last_row_weekday_dates
+                last_row_weekday
             } else {
                 WeekdayDates::parse(&day_text, &annotations, date_range)?
             };
@@ -177,7 +177,8 @@ fn parse_non_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Res
             let stops = parse_stops(element_texts(&cell_elems[4]))?;
             for depart_time in depart_times {
                 let weekdays = weekday_dates.to_date_restrictions(&depart_time.row_dates);
-                let notes = AnnotationDates::map_to_date_restrictions_by_weekdays(depart_time.row_notes, &weekdays);
+                let notes =
+                    annotation_notes_date_restictions(depart_time.row_notes, weekday_dates.notes.clone(), &weekdays);
                 items.push(ScheduleItem {
                     sailing: Sailing {
                         depart_time: depart_time.time,
@@ -188,7 +189,7 @@ fn parse_non_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Res
                     notes,
                 });
             }
-            last_row_weekday_dates = weekday_dates;
+            last_row_weekday = weekday_dates;
         }
         ScheduleItem::merge_items(items)
     };

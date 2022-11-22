@@ -29,7 +29,6 @@ local-frontend:
     cd frontend && trunk serve
 
 local-data *args:
-    rm -f {{ quote(local_schedules_file) }}
     mkdir -p {{ quote(parent_directory(local_schedules_file)) }}
     cargo run --bin ferrysched_scraper -- \
         --output-file {{ quote(local_schedules_file) }} \

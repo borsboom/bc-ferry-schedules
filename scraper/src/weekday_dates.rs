@@ -1,4 +1,5 @@
 use crate::annotations::*;
+use crate::constants::*;
 use crate::imports::*;
 
 #[derive(Debug)]
@@ -64,11 +65,13 @@ impl WeekdayDates {
                 "Dec 26 only" => "Dec 26",
                 "Dec 26-27 only" => "Dec 26, Dec 27",
                 "Dec 26-27" => "Dec 26, Dec 27",
+                "Fri & Apr 10 only" => "Fri, Apr 10",
                 "Fri & Apr 14 only" => "Fri, Apr 14",
                 "Fri & Apr 6 only" => "Fri, Apr 6",
                 "Fri & Sun" => "Fri, Sun",
                 "Fri-Sun & Hol Mon" => "Fri-Sun, Hol Mon",
                 "Fri-Sun, Hol Mon & Apr 14 only" => "Fri-Sun, Hol Mon, Apr 14",
+                "Fri-Sun and Apr 6 & 10 only" => "Fri-Sun, Apr 6, Apr 10",
                 "Fri, Hol Mon & Apr 14 only" => "Fri, Hol Mon, Apr 14",
                 "Jan 21 & 28 only" => "Jan 21, Jan 28",
                 "Mar 28 only" => "Mar 28",
@@ -87,7 +90,9 @@ impl WeekdayDates {
                 "Sat-Sun & Oct 9 only" => "Sat-Sun, Oct 9",
                 "Sat, Sun & Hol Mon" => "Sat, Sun, Hol Mon",
                 "Sat, Sun & Oct 10 only" => "Sat, Sun, Oct 10",
+                "Sep 10, 24 & Oct 8 only" => "Sep 10, Sep 24, Oct 8",
                 "Sep 12, 26 & Oct 10" => "Sep 12, Sep 26, Oct 10",
+                "Sep 17 & Oct 1 only" => "Sep 17, Oct 1",
                 "Sep 19 & Oct 3" => "Sep 19, Oct 3",
                 "Sun & Apr 10 only" => "Sun, Apr 10",
                 "Sun & Aug 7 & Sep 4 only" | "Sun and Aug 7 & Sep 4 only" => "Sun, Aug 7, Sep 4",
@@ -148,6 +153,14 @@ impl WeekdayDates {
                         Weekday::Saturday,
                     ]),
                     "tue-thu" => result.days([Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday]),
+                    "tue-thu !" => {
+                        result.days([Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday]);
+                        result.notes.extend(annotations.exclamation_notes.clone());
+                    }
+                    "tue-fri !" => {
+                        result.days([Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday, Weekday::Friday]);
+                        result.notes.extend(annotations.exclamation_notes.clone());
+                    }
                     "tue-fri" => {
                         result.days([Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday, Weekday::Friday])
                     }
@@ -156,15 +169,31 @@ impl WeekdayDates {
                     "fri-sun" => result.days([Weekday::Friday, Weekday::Saturday, Weekday::Sunday]),
                     "sat-sun" => result.days([Weekday::Saturday, Weekday::Sunday]),
                     "thu**" => result.day_restriction(Weekday::Thursday, &annotations.star2_dates),
+                    "fri !" => {
+                        result.day(Weekday::Friday);
+                        result.notes.extend(annotations.exclamation_notes.clone());
+                    }
                     "sat**" => result.day_restriction(Weekday::Saturday, &annotations.star2_dates),
                     "sun**" => result.day_restriction(Weekday::Sunday, &annotations.star2_dates),
                     "sun***" => result.day_restriction(Weekday::Sunday, &annotations.star3_dates),
                     "dg sun" => {
-                        result.day_restriction(Weekday::Sunday, &annotations.dangerous_goods_dates);
-                        result.note(Cow::from("Dangerous goods sailing only, no other passengers permitted"));
+                        result.day_restriction(Weekday::Sunday, &annotations.dg_dates);
+                        result.note(Cow::from(DANGEROUS_GOODS_SAILING_NOTE));
+                    }
+                    "dg** sun" => {
+                        result.day_restriction(Weekday::Sunday, &annotations.dg2_dates);
+                        result.note(Cow::from(DANGEROUS_GOODS_SAILING_NOTE));
+                    }
+                    "dg*** sun" => {
+                        result.day_restriction(Weekday::Sunday, &annotations.dg3_dates);
+                        result.note(Cow::from(DANGEROUS_GOODS_SAILING_NOTE));
                     }
                     "mon*" => {
                         result.day_restriction(Weekday::Monday, &annotations.star_dates);
+                    }
+                    "mon* !" => {
+                        result.day_restriction(Weekday::Monday, &annotations.star_dates);
+                        result.notes.extend(annotations.exclamation_notes.clone());
                     }
                     "mon*-thu" => {
                         result.day_restriction(Weekday::Monday, &annotations.star_dates);
@@ -194,6 +223,10 @@ impl WeekdayDates {
                     "mon**-fri" => {
                         result.day_restriction(Weekday::Monday, &annotations.star2_dates);
                         result.days([Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday, Weekday::Friday]);
+                    }
+                    "mon-fri*" => {
+                        result.days([Weekday::Monday, Weekday::Tuesday, Weekday::Wednesday, Weekday::Thursday]);
+                        result.day_restriction(Weekday::Friday, &annotations.star_dates);
                     }
                     "mon-sat**" => {
                         result.days([

@@ -17,7 +17,9 @@ pub struct AnnotationNotes {
 pub struct Annotations {
     // TODO: reduce repetition
     pub holiday_monday_dates: AnnotationDates,
-    pub dangerous_goods_dates: AnnotationDates,
+    pub dg_dates: AnnotationDates,
+    pub dg2_dates: AnnotationDates,
+    pub dg3_dates: AnnotationDates,
     pub star_dates: AnnotationDates,
     pub star_dates_by_time: HashMap<Time, AnnotationDates>,
     pub star2_dates: AnnotationDates,
@@ -136,7 +138,9 @@ impl Annotations {
             holiday_monday_dates: AnnotationDates::only(
                 EXTRA_HOLIDAY_MONDAYS.iter().filter(|d| date_range.includes_date_inclusive(**d)),
             ),
-            dangerous_goods_dates: AnnotationDates::new(),
+            dg_dates: AnnotationDates::new(),
+            dg2_dates: AnnotationDates::new(),
+            dg3_dates: AnnotationDates::new(),
             star_dates: AnnotationDates::new(),
             star_dates_by_time: HashMap::new(),
             star2_dates: AnnotationDates::new(),
@@ -300,6 +304,14 @@ impl Annotations {
                                 schedule_year_date(Month::April, 6)?,
                                 schedule_year_date(Month::April, 10)?,
                             ]),
+                        "** Except on Jul 2, 16, 30, Aug 13 & 27" =>
+                            self.star2_dates.except.extend([
+                                schedule_year_date(Month::July, 2)?,
+                                schedule_year_date(Month::July, 16)?,
+                                schedule_year_date(Month::July, 30)?,
+                                schedule_year_date(Month::August, 13)?,
+                                schedule_year_date(Month::August, 27)?
+                            ]),
                         "** Except on July 3, 17, 31 August 14, 28" |
                         "** Except on Jul 3, 17, 31, Aug 14 & 28" =>
                             self.star2_dates.except.extend([
@@ -308,6 +320,14 @@ impl Annotations {
                                 schedule_year_date(Month::July, 31)?,
                                 schedule_year_date(Month::August, 14)?,
                                 schedule_year_date(Month::August, 28)?
+                            ]),
+                        "** Except on Jul 9, 23, Aug 6, 20 & Sep 3" =>
+                            self.star2_dates.except.extend([
+                                schedule_year_date(Month::July, 9)?,
+                                schedule_year_date(Month::July, 23)?,
+                                schedule_year_date(Month::August, 6)?,
+                                schedule_year_date(Month::August, 20)?,
+                                schedule_year_date(Month::September, 3)?
                             ]),
                         "** Except on July 10, 24, August 7, 21, September 4" |
                         "** Except on Jul 10, 24, Aug 7, 21 & Sep 4" =>
@@ -318,7 +338,7 @@ impl Annotations {
                                 schedule_year_date(Month::August, 21)?,
                                 schedule_year_date(Month::September, 4)?
                             ]),
-                            "** Except Sep 11, 25 & Oct 9" =>
+                        "** Except Sep 11, 25 & Oct 9" =>
                             self.star2_dates.except.extend([
                                 schedule_year_date(Month::September, 11)?,
                                 schedule_year_date(Month::September, 25)?,
@@ -329,17 +349,31 @@ impl Annotations {
                                 schedule_year_date(Month::December, 25)?,
                                 schedule_year_date(Month::January, 1)?,
                             ]),
+                        "** Except on Sep 10, 24 & Oct 8" =>
+                            self.star2_dates.except.extend([
+                                schedule_year_date(Month::September, 10)?,
+                                schedule_year_date(Month::September, 24)?,
+                                schedule_year_date(Month::October, 8)?
+                            ]),
+                        "** Except on Sep 17 & Oct 1" =>
+                            self.star2_dates.except.extend([schedule_year_date(Month::September, 17)?, schedule_year_date(Month::October, 1)?]),
                         "** Except on September 18 and October 2" |
                         "** Except Sep 18 & Oct 2" |
                         "** Except on Sep 18 & Oct 2" =>
                             self.star2_dates.except.extend([schedule_year_date(Month::September, 18)?, schedule_year_date(Month::October, 2)?]),
-                        "*** Except Sep 18 & Oct 2" =>
-                            self.star3_dates.except.extend([schedule_year_date(Month::September, 18)?, schedule_year_date(Month::October, 2)?]),
                         "** Only on April 14th" =>
                             self.star2_dates.only.extend([schedule_year_date(Month::April, 14)?]),
                         "** Only on December 23 and December 30" |
                         "** Only on Dec 23 & 30" =>
                             self.star2_dates.only.extend([schedule_year_date(Month::December, 23)?, schedule_year_date(Month::December, 30)?]),
+                        "** Only on Jul 2, 16, 30, Aug 13 & 27" =>
+                            self.star2_dates.only.extend([
+                                schedule_year_date(Month::July, 2)?,
+                                schedule_year_date(Month::July, 16)?,
+                                schedule_year_date(Month::July, 30)?,
+                                schedule_year_date(Month::August, 13)?,
+                                schedule_year_date(Month::August, 27)?
+                            ]),
                         "** Only on July 3, 17, 31 August 14, 28" |
                         "** Only on July 3, 17, 31, August 14, 28" |
                         "** Only on Jul 3, 17, 31 Aug 14 & 28" |
@@ -360,6 +394,14 @@ impl Annotations {
                                 schedule_year_date(Month::September, 25)?,
                                 schedule_year_date(Month::October, 9)?
                             ]),
+                        "*** Only on Jul 9, 23, Aug 6, 20 & Sep 3" =>
+                            self.star3_dates.only.extend([
+                                schedule_year_date(Month::July, 9)?,
+                                schedule_year_date(Month::July, 23)?,
+                                schedule_year_date(Month::August, 6)?,
+                                schedule_year_date(Month::August, 20)?,
+                                schedule_year_date(Month::September, 3)?
+                            ]),
                         "*** Only on July 10, 24, August 7, 21, September 4" |
                         "*** Only on Jul 10, 24, Aug 7, 21 & Sep 4" =>
                             self.star3_dates.only.extend([
@@ -376,6 +418,10 @@ impl Annotations {
                                 schedule_year_date(Month::September, 25)?,
                                 schedule_year_date(Month::October, 9)?
                             ]),
+                        "*** Except Sep 18 & Oct 2" =>
+                            self.star3_dates.except.extend([schedule_year_date(Month::September, 18)?, schedule_year_date(Month::October, 2)?]),
+                        "*** Except on Sep 17 & Oct 1" =>
+                            self.star3_dates.except.extend([schedule_year_date(Month::September, 17)?, schedule_year_date(Month::October, 1)?]),
                         "* Only on April 14th" =>
                             self.star_dates.only.extend([schedule_year_date(Month::April, 14)?]),
                         "* Only on Apr 10" =>
@@ -508,6 +554,13 @@ impl Annotations {
                                 from: date!(2022 - 2 - 14),
                                 to: date!(2022 - 3 - 16)
                             }.iter_days()),
+                        "** Except on May 7, 21, Jun 4 & 18" =>
+                            self.star2_dates.except.extend([
+                                schedule_year_date(Month::May, 7)?,
+                                schedule_year_date(Month::May, 21)?,
+                                schedule_year_date(Month::June, 4)?,
+                                schedule_year_date(Month::June, 18)?,
+                            ]),
                         "** Except May 8, 22 & June 5, 19" |
                         "** Except May 8, 22, Jun 5 & 19" =>
                             self.star2_dates.except.extend([
@@ -523,6 +576,13 @@ impl Annotations {
                                 schedule_year_date(Month::June, 5)?,
                                 schedule_year_date(Month::June, 19)?,
                             ]),
+                        "** Except on May 14, 28, Jun 11 & 25" =>
+                            self.star2_dates.except.extend([
+                                schedule_year_date(Month::May, 14)?,
+                                schedule_year_date(Month::May, 28)?,
+                                schedule_year_date(Month::June, 11)?,
+                                schedule_year_date(Month::June, 25)?,
+                            ]),
                         "** Except on May 15, 29 & June 12, 26" |
                         "** Except May 15, 29, Jun 12 & 26" |
                         "** Except on May 15, 29, Jun 12 & 26" =>
@@ -532,12 +592,26 @@ impl Annotations {
                                 schedule_year_date(Month::June, 12)?,
                                 schedule_year_date(Month::June, 26)?,
                             ]),
+                        "*** Except on May 14, 28, Jun 11 & 25" =>
+                            self.star3_dates.except.extend([
+                                schedule_year_date(Month::May, 14)?,
+                                schedule_year_date(Month::May, 28)?,
+                                schedule_year_date(Month::June, 11)?,
+                                schedule_year_date(Month::June, 25)?,
+                            ]),
                         "*** Except May 15, 29, Jun 12 & 26" =>
                             self.star3_dates.except.extend([
                                 schedule_year_date(Month::May, 15)?,
                                 schedule_year_date(Month::May, 29)?,
                                 schedule_year_date(Month::June, 12)?,
                                 schedule_year_date(Month::June, 26)?,
+                            ]),
+                        "*** Only on May 7, 21, Jun 11 & 25" =>
+                            self.star3_dates.only.extend([
+                                schedule_year_date(Month::May, 7)?,
+                                schedule_year_date(Month::May, 21)?,
+                                schedule_year_date(Month::June, 11)?,
+                                schedule_year_date(Month::June, 25)?,
                             ]),
                         "*** Only on May 8, 22, Jun 12 & 26" =>
                             self.star3_dates.except.extend([
@@ -547,37 +621,37 @@ impl Annotations {
                                 schedule_year_date(Month::June, 26)?,
                             ]),
                         "# Foot passengers only on this sailing - Vehicles permitted February 14 to March 28, 2022" =>
-                            text_date_restriction(&mut self.hash_notes, "Foot passengers only").except.extend(DateRange {
+                            text_date_restriction(&mut self.hash_notes, FOOT_PASSENGERS_ONLY_NOTE).except.extend(DateRange {
                                 from: schedule_year_date(Month::February, 14)?,
                                 to: schedule_year_date(Month::March, 28)?,
                             }.iter_days()),
                         "# Foot passengers only on this sailing - Vehicles permitted February 14 to March 16, 2022" =>
-                            text_date_restriction(&mut self.hash_notes, "Foot passengers only").except.extend(DateRange {
+                            text_date_restriction(&mut self.hash_notes, FOOT_PASSENGERS_ONLY_NOTE).except.extend(DateRange {
                                 from: schedule_year_date(Month::February, 14)?,
                                 to: schedule_year_date(Month::March, 16)?,
                             }.iter_days()),
                         "# Foot passengers only February 14 to March 28" =>
-                            text_date_restriction(&mut self.hash_notes, "Foot passengers only").only.extend(DateRange {
+                            text_date_restriction(&mut self.hash_notes, FOOT_PASSENGERS_ONLY_NOTE).only.extend(DateRange {
                                     from: schedule_year_date(Month::February, 14)?,
                                     to: schedule_year_date(Month::March, 28)?,
                                 }.iter_days()),
                         "# Foot passengers only February 14 to March 16" =>
-                            text_date_restriction(&mut self.hash_notes, "Foot passengers only").only.extend(DateRange {
+                            text_date_restriction(&mut self.hash_notes, FOOT_PASSENGERS_ONLY_NOTE).only.extend(DateRange {
                                     from: schedule_year_date(Month::February, 14)?,
                                     to: schedule_year_date(Month::March, 16)?,
                                 }.iter_days()),
                         "+ Foot passengers only through March 28" if to_year == 2022 =>
-                            text_date_restriction(&mut self.plus_notes, "Foot passengers only").only.extend(DateRange {
+                            text_date_restriction(&mut self.plus_notes, FOOT_PASSENGERS_ONLY_NOTE).only.extend(DateRange {
                                 from: date!(2022 - 2 - 14),
                                 to: date!(2022 - 3 - 28),
                             }.iter_days()),
                         "+ Foot passengers only through March 16" if to_year == 2022 =>
-                            text_date_restriction(&mut self.plus_notes, "Foot passengers only").only.extend(DateRange {
+                            text_date_restriction(&mut self.plus_notes, FOOT_PASSENGERS_ONLY_NOTE).only.extend(DateRange {
                                 from: date!(2022 - 2 - 14),
                                 to: date!(2022 - 3 - 16),
                             }.iter_days()),
                         "# Foot passengers only on this sailing" => {
-                            text_date_restriction(&mut self.hash_notes, "Foot passengers only");
+                            text_date_restriction(&mut self.hash_notes, FOOT_PASSENGERS_ONLY_NOTE);
                         }
                         "# Foot passengers only on this sailing except the 9:10 AM sailing on May 30 which will permit vehicles" => {
                             text_date_restriction(
@@ -586,7 +660,7 @@ impl Annotations {
                             );
                         }
                         "+ Foot passengers only Fridays February 18, 25, March 4, 11, 18, 25" =>
-                            text_date_restriction(&mut self.plus_notes, "Foot passengers only").only.extend([
+                            text_date_restriction(&mut self.plus_notes, FOOT_PASSENGERS_ONLY_NOTE).only.extend([
                                 schedule_year_date(Month::February, 18)?,
                                 schedule_year_date(Month::February, 25)?,
                                 schedule_year_date(Month::March, 4)?,
@@ -619,13 +693,13 @@ impl Annotations {
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on Apr 9 & 23, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::April, 9)?,
                                 schedule_year_date(Month::April, 23)?,
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on May 7, 21, Jun 4 & 18, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::May, 7)?,
                                 schedule_year_date(Month::May, 21)?,
                                 schedule_year_date(Month::June, 4)?,
@@ -633,7 +707,7 @@ impl Annotations {
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on Jul 2, 16, 30, Aug 13 & 27, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::July, 2)?,
                                 schedule_year_date(Month::July, 16)?,
                                 schedule_year_date(Month::July, 30)?,
@@ -642,14 +716,14 @@ impl Annotations {
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on Sep 10, 24 & Oct 9, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::September, 10)?,
                                 schedule_year_date(Month::September, 24)?,
                                 schedule_year_date(Month::October, 9)?,
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on Oct 22, Nov 6, 19, Dec 3, 17, 31, Jan 14, 28, Feb 11, 25, Mar 10 & 24, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::October, 22)?,
                                 schedule_year_date(Month::November, 6)?,
                                 schedule_year_date(Month::November, 19)?,
@@ -665,7 +739,7 @@ impl Annotations {
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on May 14, 28, Jun 11 & 25, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::May, 14)?,
                                 schedule_year_date(Month::May, 28)?,
                                 schedule_year_date(Month::June, 11)?,
@@ -673,14 +747,14 @@ impl Annotations {
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on Apr 2, 16 & 30, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::April, 2)?,
                                 schedule_year_date(Month::April, 16)?,
                                 schedule_year_date(Month::April, 30)?,
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on Jul 9, 23, Aug 6, 20 & Sep 3, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::July, 9)?,
                                 schedule_year_date(Month::July, 23)?,
                                 schedule_year_date(Month::August, 6)?,
@@ -689,13 +763,13 @@ impl Annotations {
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on Sep 17 & Oct 1, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::September, 17)?,
                                 schedule_year_date(Month::October, 1)?,
                             ])
                         }
                         "(DG) Dangerous Goods Sailing only on Oct 15, 29, Nov 12, 26, Dec 10, 24, Jan 7, 21, Feb 4, 18, Mar 3, 17 & 31, No other passengers permitted" => {
-                            self.dangerous_goods_dates.only.extend([
+                            self.dg_dates.only.extend([
                                 schedule_year_date(Month::October, 15)?,
                                 schedule_year_date(Month::October, 29)?,
                                 schedule_year_date(Month::November, 12)?,
@@ -709,6 +783,22 @@ impl Annotations {
                                 schedule_year_date(Month::March, 3)?,
                                 schedule_year_date(Month::March, 17)?,
                                 schedule_year_date(Month::March, 31)?,
+                            ])
+                        }
+                        "(DG**) Dangerous Goods Sailing only on May 14, 28, Jun 11 & 25, No other passengers permitted" => {
+                            self.dg2_dates.only.extend([
+                                schedule_year_date(Month::May, 14)?,
+                                schedule_year_date(Month::May, 28)?,
+                                schedule_year_date(Month::June, 11)?,
+                                schedule_year_date(Month::June, 25)?,
+                            ])
+                        }
+                        "(DG***) Dangerous Goods Sailing only on May 7, 21, Jun 4 & 18, No other passengers permitted" => {
+                            self.dg3_dates.only.extend([
+                                schedule_year_date(Month::May, 7)?,
+                                schedule_year_date(Month::May, 21)?,
+                                schedule_year_date(Month::June, 4)?,
+                                schedule_year_date(Month::June, 18)?,
                             ])
                         }
                         "View dangerous goods sailings" => {}

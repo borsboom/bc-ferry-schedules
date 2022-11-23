@@ -16,6 +16,7 @@ impl DepartTimeAndRowAnnotations {
         let star2_suffix_re: &Regex = regex!(r"(?i)(M) ?\*\*$");
         let exclamation_suffix_re: &Regex = regex!(r"(?i)(M) ?!$");
         let hash_suffix_re: &Regex = regex!(r"(?i)(M) ?#$");
+        let hash_prefix_re: &Regex = regex!(r"(?i)^# ?([0-9])");
         let plus_suffix_re: &Regex = regex!(r"(?i)(M) ?\+$");
         let exclamation2_suffix_re: &Regex = regex!(r"(?i)(M) ?!!$");
         let exclamation_plus_suffix_re: &Regex = regex!(r"(?i)(M) ?! ?\+$");
@@ -53,6 +54,10 @@ impl DepartTimeAndRowAnnotations {
             row_dates.extend(&annotations.hash_dates);
             row_notes.extend(annotations.hash_notes.clone());
             hash_suffix_re.replace(orig_text, "$1")
+        } else if hash_prefix_re.is_match(orig_text) {
+            row_dates.extend(&annotations.hash_dates);
+            row_notes.extend(annotations.hash_notes.clone());
+            hash_prefix_re.replace(orig_text, "$1")
         } else if plus_suffix_re.is_match(orig_text) {
             row_dates.extend(&annotations.plus_dates);
             row_notes.extend(annotations.plus_notes.clone());

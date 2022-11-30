@@ -198,22 +198,18 @@ fn parse_non_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Res
 
 async fn scrape_schedule(
     options: &Options,
-    cache: &Cache<'_>,
+    source_url: &str,
+    document: &Html,
     terminal_pair: TerminalPair,
     schedule_path_query_text: &str,
     today: Date,
 ) -> Result<Option<Schedule>> {
-    let source_url = format!("{}{}", BCFERRIES_BASE_URL, schedule_path_query_text);
     let inner = async {
         let ScheduleQuery { date_range, is_route9 } = ScheduleQuery::parse(schedule_path_query_text)
             .with_context(|| format!("Failed to schedule path/query: {:?}", schedule_path_query_text))?;
         if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
         }
-        let document = cache
-            .get_html(&source_url, &HTML_ERROR_REGEX)
-            .await
-            .with_context(|| format!("Failed to download schedule HTML from: {:?}", source_url))?;
         info!("Parsing schedule for {}, {}", terminal_pair, date_range);
         let table_elem = document
             .select(selector!("div.seasonal-schedule-wrapper table"))
@@ -253,13 +249,25 @@ pub async fn scrape_other_route_schedules(
             .get_html(&base_url, &HTML_ERROR_REGEX)
             .await
             .with_context(|| format!("Failed to download base schedule HTML from: {:?}", base_url))?;
-        let schedule_path_query_elems = base_document.select(selector!("div#dateRangeModal a"));
+        let date_range_modal_elem =
+            base_document.select(selector!("div#dateRangeModal")).next().context("Missing date range modal")?;
+        let schedule_path_query_elems = date_range_modal_elem.select(selector!("div#dateRangeModal a"));
         let mut schedules = Vec::new();
-        for schedule_path_query_elem in schedule_path_query_elems.take(1) {
-            let schedule_path_query = schedule_path_query_elem.value().attr("href").ok_or_else(|| {
+        for (index, schedule_path_query_elem) in schedule_path_query_elems.enumerate() {
+            let schedule_path_query_text = schedule_path_query_elem.value().attr("href").ok_or_else(|| {
                 anyhow!("Missing schedule path/query in date range link element: {}", schedule_path_query_elem.html())
             })?;
-            let opt_schedule = scrape_schedule(options, cache, terminal_pair, schedule_path_query, today).await?;
+            let opt_schedule = if index == 0 {
+                scrape_schedule(options, &base_url, &base_document, terminal_pair, schedule_path_query_text, today)
+                    .await?
+            } else {
+                let source_url = format!("{}{}", BCFERRIES_BASE_URL, schedule_path_query_text);
+                let document = cache
+                    .get_html(&source_url, &HTML_ERROR_REGEX)
+                    .await
+                    .with_context(|| format!("Failed to download schedule HTML from: {:?}", source_url))?;
+                scrape_schedule(options, &source_url, &document, terminal_pair, schedule_path_query_text, today).await?
+            };
             opt_schedule.iter().for_each(|s| debug!("Parsed schedule: {:#?}", s));
             schedules.extend(opt_schedule);
         }

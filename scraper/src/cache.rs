@@ -60,7 +60,7 @@ impl<'a> Cache<'a> {
                 let cache_modified_time: OffsetDateTime = cache_metadata.modified()?.into();
                 if OffsetDateTime::now_utc() - cache_modified_time < self.max_cache_age {
                     if let Ok((cached_value, _)) = transform(fs::read_to_string(&cache_path)?) {
-                        info!("Using cached: {:?}", cache_path);
+                        info!("Using cache: {:?}", url);
                         return Ok(cached_value);
                     }
                 }

@@ -349,6 +349,11 @@ impl Annotations {
                                 schedule_year_date(Month::December, 25)?,
                                 schedule_year_date(Month::January, 1)?,
                             ]),
+                        "** Except on December 25, 2022 & January 1, 2023" =>
+                            self.star2_dates.except.extend([
+                                date!(2022 - 12 - 25),
+                                date!(2023 - 1 - 1),
+                            ]),
                         "** Except on Sep 10, 24 & Oct 8" =>
                             self.star2_dates.except.extend([
                                 schedule_year_date(Month::September, 10)?,

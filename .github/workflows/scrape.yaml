@@ -1,15 +1,19 @@
 name: scrape
+
 on:
   schedule:
     - cron: '44 11,23 * * *'
   repository_dispatch:
     types: [scrape]
+  workflow_dispatch:
+
 jobs:
+
   scrape:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: extractions/setup-just@v1
+      - uses: taiki-e/install-action@just
       - uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build.yaml

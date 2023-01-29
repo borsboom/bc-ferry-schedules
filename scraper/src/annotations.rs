@@ -176,6 +176,10 @@ impl Annotations {
         for annotation_text in annotation_texts {
             let mut inner = || {
                 let annotation_text = match annotation_text.as_ref() {
+                    "Except on May 14, 28, Jun 11 & 25" => "Except on May 14, May 28, Jun 11, Jun 25",
+                    "Only on April 10" => "Only on Apr 10",
+                    "Only on Apr 10." => "Only on Apr 10",
+                    "Only on April 6" => "Only on Apr 6",
                     "Only on Dec 23 & 30" => "Only on Dec 23, Dec 30",
                     text => text,
                 };
@@ -202,7 +206,7 @@ impl Annotations {
                             &format!("{} {}", date_text, from_year),
                             format_description!("[day padding:none] [month repr:short case_sensitive:false] [year]"),
                         )
-                        .with_context(|| format!("Failed to parse date: {:?}", date_text))?;
+                        .with_context(|| format!("Failed to parse date {:?} in {:?}", date_text, annotation_text))?;
                         let date = date_range.make_year_within(parsed_date).with_context(|| {
                             format!("Date is outside date range of schedule ({}): {:?}", date_range, parsed_date)
                         })?;
@@ -220,7 +224,7 @@ impl Annotations {
                             &format!("{} {}", date_text, from_year),
                             format_description!("[month repr:short case_sensitive:false] [day padding:none] [year]"),
                         )
-                        .with_context(|| format!("Failed to parse date: {:?}", date_text))?;
+                        .with_context(|| format!("Failed to parse date {:?} in: {:?}", date_text, annotation_text))?;
                         let date = date_range.make_year_within(parsed_date).with_context(|| {
                             format!("Date is outside date range of schedule ({}): {:?}", date_range, parsed_date)
                         })?;

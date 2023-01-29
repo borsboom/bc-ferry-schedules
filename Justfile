@@ -20,7 +20,7 @@ check:
     cargo test
     cargo clippy -- -D warnings
     cargo fmt -- --check
-    fix="$(git grep -I -i '@[@]@\|%[%]%\|F[I]XME\|d[b]g!\|p[r]intln!')"; test "$fix" = "" || (echo "\nFIX COMMENTS:\n$fix\n" >&2; false)
+    fix="$(git grep -I -i '@[@]@\|%[%]%\|F[I]XME\|d[b]g!\|p[r]intln!\|u[n]implemented!')"; test "$fix" = "" || (echo "\nFIX COMMENTS:\n$fix\n" >&2; false)
     dirty="$(git status . --short)"; test "$dirty" = "" || (echo "\nDIRTY FILES:\n$dirty\n" >&2; false)
     @echo "\nChecks passed."
 

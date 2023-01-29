@@ -206,19 +206,19 @@ impl Terminal {
         match *self {
             Terminal::BTW => Area::Brentwood,
             Terminal::CFT => Area::Crofton,
+            Terminal::CHM => Area::Chemainus,
             Terminal::FUL => Area::SaltSpring,
             Terminal::MIL => Area::MillBay,
+            Terminal::PEN => Area::Penelakut,
             Terminal::PLH => Area::SaltSpring,
             Terminal::POB => Area::Pender,
             Terminal::PSB => Area::Galiano,
             Terminal::PST => Area::Saturna,
             Terminal::PVB => Area::Mayne,
             Terminal::SWB => Area::Victoria,
+            Terminal::THT => Area::Thetis,
             Terminal::TSA => Area::Vancouver,
             Terminal::VES => Area::SaltSpring,
-            Terminal::CHM => Area::Chemainus,
-            Terminal::THT => Area::Thetis,
-            Terminal::PEN => Area::Penelakut,
         }
     }
 }

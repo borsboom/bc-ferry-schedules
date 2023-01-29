@@ -16,7 +16,7 @@ struct ScheduleQuery {
 
 impl ScheduleQuery {
     fn parse(schedule_path_query: &str) -> Result<ScheduleQuery> {
-        let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R9_([0-9_]*)")
+        let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R[0-9]+_([0-9_]*)")
             .captures(schedule_path_query)
             .ok_or_else(|| {
                 anyhow!(

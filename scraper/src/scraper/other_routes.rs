@@ -210,6 +210,17 @@ async fn scrape_schedule(
         if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
         }
+        if DISABLED_TERMINAL_PAIRS.contains(&terminal_pair) {
+            info!("Skipping parsing disabled schedule for {}, {}", terminal_pair, date_range);
+            return Ok(Some(Schedule {
+                terminal_pair,
+                date_range,
+                items: vec![],
+                source_url: source_url.to_string(),
+                refreshed_at: now_vancouver(),
+                alerts: vec![Alert {message: "THIS SCHEDULE IS CURRENTLY UNAVAILABLE!  BC Ferries has re-worked the schedule page on their website and the scraper needs to be updated to understand it.  I'm working on it!".to_string(), level: AlertLevel::Danger}],
+            }));
+        }
         info!("Parsing schedule for {}, {}", terminal_pair, date_range);
         let table_elem = document
             .select(selector!("div.seasonal-schedule-wrapper table"))

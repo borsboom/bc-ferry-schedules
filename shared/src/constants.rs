@@ -71,3 +71,16 @@ pub static AREA_TERMINALS: Lazy<HashMap<Area, HashSet<Terminal>>> =
 
 pub static AREA_PAIR_TERMINAL_PAIRS: Lazy<HashMap<AreaPair, HashSet<TerminalPair>>> =
     Lazy::new(|| into_hashset_group_map(ALL_TERMINAL_PAIRS.iter().cloned(), |tp| tp.area_pair()));
+
+pub static DISABLED_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
+    HashSet::from_iter(
+        //TODO: re-enable these terminal pairs
+        [
+            TerminalPair { from: Terminal::CFT, to: Terminal::VES },
+            TerminalPair { from: Terminal::CHM, to: Terminal::PEN },
+            TerminalPair { from: Terminal::CHM, to: Terminal::THT },
+            TerminalPair { from: Terminal::THT, to: Terminal::CHM },
+            TerminalPair { from: Terminal::VES, to: Terminal::CFT },
+        ],
+    )
+});

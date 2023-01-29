@@ -38,7 +38,7 @@ and a single page web app front-end to browse the sailings.
     app.
 ## License
 
-Copyright © 2022 Emanuel Borsboom.
+Copyright © 2022-2023 Emanuel Borsboom.
 
 Licensed under either of
 

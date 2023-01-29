@@ -18,7 +18,7 @@ fn navbar_component() -> Html {
         <nav class="mb-3 navbar navbar-expand navbar-dark rounded d-print-none bg-heading">
             <div class="container-fluid">
                 <Link<Route> classes="navbar-brand" to={Route::Home}>
-                    <img src="/assets/logo.png" width="30" height="30" alt="B.C. Ferry Schedules"/>
+                    <img src="/assets/logo.png" width="30" height="30" alt="Schedules for BC Ferries"/>
                 </Link<Route>>
                 <div class="collapse navbar-collapse">
                     <ul class="navbar-nav">
@@ -79,11 +79,11 @@ fn select_to_area_html(from: Area, query: &SailingsQuery) -> Html {
 fn home_html() -> Html {
     html! { <>
         <h1 class="display-6">
-            { "B.C. Ferry Schedules" }
+            { "Schedules for BC Ferries" }
             <small class="text-muted">{ " for the Southern Gulf Islands" }</small>
         </h1>
         <p class="lead">
-            { "An easy to use and understand presentation of the BC Ferries schedules for for the Southern Gulf Islands, Victoria, and Vancouver. Just select your locations and date, and you're shown the sailings for that day."}
+            { "An easy to use and understand presentation of the BC Ferries schedules for the Southern Gulf Islands, Victoria, and Vancouver. Just select your locations and date, and you're shown the sailings for that day."}
         </p>
         { select_from_area_html(&SailingsQuery::new()) }
         <div class="p-2 bg-light border rounded">
@@ -111,7 +111,7 @@ fn sailings_page_component() -> Html {
     }
     html! { <>
         <h1 class="display-6 mb-3 small">
-            { "B.C. Ferry Schedule" }
+            { "Schedules for BC Ferries" }
         </h1>
         <h5 class={ if query.from.is_some() && query.to.is_some() { "d-none d-print-block" } else { "" } }>
             { if let Some(from) = query.from { html! {

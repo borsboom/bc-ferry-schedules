@@ -176,9 +176,11 @@ impl Annotations {
         for annotation_text in annotation_texts {
             let mut inner = || {
                 let annotation_text = match annotation_text.as_ref() {
+                    "Except on Apr 6, 20, May 4, 18, Jun 1, 15, 29, Jul 13, 27, Aug 10, 24, Sep 7, 21, Oct 5, 19, Nov 2, 16, 30, Dec 14, 28, Jan 11, 25, Feb 8, 22, Mar 7 & 21" => "Except on Apr 6, Apr 20, May 4, May 18, Jun 1, Jun 15, Jun 29, Jul 13, Jul 27, Aug 10, Aug 24, Sep 7, Sep 21, Oct 5, Oct 19, Nov 2, Nov 16, Nov 30, Dec 14, Dec 28, Jan 11, Jan 25, Feb 8, Feb 22, Mar 7, Mar 21",
+                    "Except on Jan 12, 26, Feb 9, 23, Mar 9, 23" => "Except on Jan 12, Jan 26, Feb 9, Feb 23, Mar 9, Mar 23",
                     "Except on May 14, 28, Jun 11 & 25" => "Except on May 14, May 28, Jun 11, Jun 25",
-                    "Only on April 10" => "Only on Apr 10",
                     "Only on Apr 10." => "Only on Apr 10",
+                    "Only on April 10" => "Only on Apr 10",
                     "Only on April 6" => "Only on Apr 6",
                     "Only on Dec 23 & 30" => "Only on Dec 23, Dec 30",
                     text => text,

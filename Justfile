@@ -8,7 +8,7 @@ local_schedules_file := "frontend/local/" + schedules_key
 upload_data_args := '--output-s3-bucket "$S3_BUCKET" --output-s3-key ' + quote(schedules_key) + ' --invalidate-cloudfront-distribution-id "$CLOUDFRONT_DISTRIBUTION_ID"'
 normalize_data_jq := '.
     | sort_by(.terminal_pair.from + .terminal_pair.to + .date_range.from + .date_range.to)
-    | .[].items |= sort_by(.sailing.depart_time + .sailing.arrive_time)
+    | .[].items |= sort_by(.sailing.depart_time + .sailing.arrive_time + (.sailing | tostring))
     | (.. | .refreshed_at? | select(. != null)) |= null
     | (.. | .Only? | select(. != null)) |= sort
     | (.. | .Except? | select(. != null)) |= sort'
@@ -57,5 +57,13 @@ compare-data: local-data
     jq --sort-keys {{ quote(normalize_data_jq) }} <{{ quote(local_schedules_file) }} >tmp/compare_new_data.json
     diff -u tmp/compare_old_data.json tmp/compare_new_data.json
 
+scraper-coverage:
+    # See https://blog.rng0.io/how-to-do-code-coverage-in-rust
+    mkdir -p tmp
+    CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='scraper-coverage-%p-%m.profraw' just local-data
+    mkdir -p target/coverage/html
+    grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/html
+    grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/scraper.lcov
+
 clean:
-    rm -rf Cargo.lock frontend/dist/ frontend/dist-release/ frontend/local/ target/ tmp/
+    rm -rf frontend/dist/ frontend/dist-release/ frontend/local/ target/ tmp/

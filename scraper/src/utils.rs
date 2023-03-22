@@ -81,3 +81,16 @@ pub fn should_scrape_schedule_date(schedule_date_range: DateRange, today: Date, 
     schedule_date_range.to >= today
         && restrict_date.map(|date| schedule_date_range.includes_date_inclusive(date)).unwrap_or(true)
 }
+
+pub fn parse_weekday(text: &str) -> Result<Weekday> {
+    match text {
+        "mon" | "Mondays" => Ok(Weekday::Monday),
+        "tue" | "Tuesdays" => Ok(Weekday::Tuesday),
+        "wed" | "Wednesdays" => Ok(Weekday::Wednesday),
+        "thu" | "Thursdays" => Ok(Weekday::Thursday),
+        "fri" | "Fridays" => Ok(Weekday::Friday),
+        "sat" | "Saturdays" => Ok(Weekday::Saturday),
+        "sun" | "Sundays" => Ok(Weekday::Sunday),
+        _ => bail!("Unrecognized day text: {:?}", text),
+    }
+}

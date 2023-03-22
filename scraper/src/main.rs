@@ -8,7 +8,6 @@ mod output;
 mod scraper;
 mod types;
 mod utils;
-mod weekday_dates;
 
 use clap::Parser;
 use directories::ProjectDirs;

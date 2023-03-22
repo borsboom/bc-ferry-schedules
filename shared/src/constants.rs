@@ -52,6 +52,11 @@ pub static OTHER_ROUTES_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(
             TerminalPair { from: Terminal::PSB, to: Terminal::TSA },
             TerminalPair { from: Terminal::PST, to: Terminal::TSA },
             TerminalPair { from: Terminal::PVB, to: Terminal::TSA },
+            TerminalPair { from: Terminal::SWB, to: Terminal::PLH },
+            TerminalPair { from: Terminal::SWB, to: Terminal::POB },
+            TerminalPair { from: Terminal::SWB, to: Terminal::PSB },
+            TerminalPair { from: Terminal::SWB, to: Terminal::PST },
+            TerminalPair { from: Terminal::SWB, to: Terminal::PVB },
             TerminalPair { from: Terminal::SWB, to: Terminal::TSA },
             TerminalPair { from: Terminal::VES, to: Terminal::CFT },
         ]

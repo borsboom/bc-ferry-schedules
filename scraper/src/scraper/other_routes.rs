@@ -14,6 +14,12 @@ struct ScheduleQuery {
     pub is_route9: bool,
 }
 
+#[derive(Debug)]
+enum ParseAnnotations {
+    SkipRow,
+    ProcessRow(Box<(Annotations, Vec<String>)>),
+}
+
 impl ScheduleQuery {
     fn parse(schedule_path_query: &str) -> Result<ScheduleQuery> {
         let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R[0-9]+_([0-9_]*)")
@@ -37,10 +43,7 @@ impl ScheduleQuery {
     }
 }
 
-fn parse_annotations(
-    depart_times_annotations_texts: Vec<String>,
-    date_range: &DateRange,
-) -> Result<(Annotations, Vec<String>)> {
+fn parse_annotations(depart_times_annotations_texts: Vec<String>, date_range: &DateRange) -> Result<ParseAnnotations> {
     let inner = || {
         let mut depart_times_texts = Vec::new();
         let mut annotations = Annotations::new(date_range);
@@ -55,7 +58,18 @@ fn parse_annotations(
                 }
             }
         }
-        Ok((annotations, depart_times_texts)) as Result<_>
+        if annotations.is_dg_only {
+            // TODO: Do not skip dangerous goods sailings; instead include them with a note on the schedule
+            Ok(ParseAnnotations::SkipRow) as Result<_>
+        } else {
+            ensure!(
+                annotations.dg_dates.is_always()
+                    && annotations.dg2_dates.is_always()
+                    && annotations.dg3_dates.is_always(),
+                "Expect no dangeous goods dates for non-DG sailing"
+            );
+            Ok(ParseAnnotations::ProcessRow(Box::new((annotations, depart_times_texts)))) as Result<_>
+        }
     };
     inner().context("Failed to parse depart time/annotations texts")
 }
@@ -127,20 +141,27 @@ fn parse_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Result<
                     "Row should have six cells: {:?}",
                     cell_elems.iter().map(element_text).collect::<Vec<_>>()
                 );
-                let (annotations, depart_times_texts) = parse_annotations(element_texts(&cell_elems[1]), date_range)?;
+                let (annotations, depart_times_texts) =
+                    match parse_annotations(element_texts(&cell_elems[1]), date_range)? {
+                        ParseAnnotations::SkipRow => continue,
+                        ParseAnnotations::ProcessRow(result) => *result,
+                    };
                 let depart_times = parse_depart_times_and_annotations(depart_times_texts, &annotations)?;
                 ensure!(depart_times.len() == 1, "Expect exactly one depart time in row");
                 let depart_time = depart_times.into_iter().next().expect("Expect at least one depart time in row");
                 let weekday_dates = WeekdayDates::parse(weekday_text, &annotations, date_range)?;
                 let arrive_time = parse_schedule_time(&element_text(&cell_elems[2]))?;
-                let stops = parse_stops(element_texts(&cell_elems[4]))?;
-                let weekdays = weekday_dates.to_date_restrictions(&depart_time.row_dates);
-                let notes = annotation_notes_date_restictions(depart_time.row_notes, weekday_dates.notes, &weekdays);
-                items.push(ScheduleItem {
-                    sailing: Sailing { depart_time: depart_time.time, arrive_time, stops: stops.clone() },
-                    weekdays,
-                    notes,
-                });
+                if arrive_time != depart_time.time {
+                    let stops = parse_stops(element_texts(&cell_elems[4]))?;
+                    let weekdays = weekday_dates.to_date_restrictions(&depart_time.row_dates);
+                    let notes =
+                        annotation_notes_date_restictions(depart_time.row_notes, weekday_dates.notes, &weekdays);
+                    items.push(ScheduleItem {
+                        sailing: Sailing { depart_time: depart_time.time, arrive_time, stops: stops.clone() },
+                        weekdays,
+                        notes,
+                    });
+                }
             }
         }
         ScheduleItem::merge_items(items)
@@ -165,7 +186,11 @@ fn parse_non_route9_table(table_elem: ElementRef, date_range: &DateRange) -> Res
                 "Row should have six cells: {:?}",
                 cell_elems.iter().map(element_text).collect::<Vec<_>>()
             );
-            let (annotations, depart_times_texts) = parse_annotations(element_texts(&cell_elems[2]), date_range)?;
+            let (annotations, depart_times_texts) = match parse_annotations(element_texts(&cell_elems[2]), date_range)?
+            {
+                ParseAnnotations::SkipRow => continue,
+                ParseAnnotations::ProcessRow(result) => *result,
+            };
             let depart_times = parse_depart_times_and_annotations(depart_times_texts, &annotations)?;
             let day_text = element_text(&cell_elems[1]);
             let weekday_dates = if day_text.is_empty() {

@@ -10,15 +10,4 @@ pub const FOOT_PASSENGERS_ONLY_NOTE: &str = "Foot passengers only";
 
 pub const DANGEROUS_GOODS_SAILING_NOTE: &str = "Dangerous goods sailing only, no other passengers permitted";
 
-pub static DISABLED_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
-    HashSet::from_iter(
-        //TODO: re-enable these terminal pairs
-        [
-            TerminalPair { from: Terminal::CFT, to: Terminal::VES },
-            TerminalPair { from: Terminal::CHM, to: Terminal::PEN },
-            TerminalPair { from: Terminal::CHM, to: Terminal::THT },
-            TerminalPair { from: Terminal::THT, to: Terminal::CHM },
-            TerminalPair { from: Terminal::VES, to: Terminal::CFT },
-        ],
-    )
-});
+pub static DISABLED_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| HashSet::from_iter([]));

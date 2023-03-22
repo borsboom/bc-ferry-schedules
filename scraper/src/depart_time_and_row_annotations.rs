@@ -64,6 +64,7 @@ impl DepartTimeAndRowAnnotations {
             plus_suffix_re.replace(orig_text, "$1")
         } else {
             row_dates.extend(&annotations.all_dates);
+            row_notes.extend(annotations.all_notes.clone());
             Cow::from(orig_text)
         };
         let depart_time = parse_schedule_time(&text)

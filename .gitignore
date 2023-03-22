@@ -1,5 +1,4 @@
 .env
-Cargo.lock
 frontend/dist-release/
 frontend/dist/
 frontend/local/

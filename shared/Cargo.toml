@@ -14,8 +14,8 @@ serde = { version = "1.0", features = ["derive"] }
 stdweb = { version = "0.4", optional = true }
 strum = "0.24"
 strum_macros = "0.24"
-time = "0.3"
-time-macros = "0.2"
+time = ">=0.3.0, <0.3.20"
+time-macros = ">=0.2.0, <0.2.8"
 time-tz = "1.0"
 
 [features]

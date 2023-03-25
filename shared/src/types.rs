@@ -221,6 +221,13 @@ impl Terminal {
             Terminal::VES => Area::SaltSpring,
         }
     }
+
+    pub fn combinations(terminals: &[Terminal]) -> impl Iterator<Item = TerminalPair> + '_ {
+        terminals
+            .iter()
+            .combinations(2)
+            .flat_map(|v| [TerminalPair { from: *v[0], to: *v[1] }, TerminalPair { from: *v[1], to: *v[0] }])
+    }
 }
 
 impl AreaPair {
@@ -238,7 +245,7 @@ impl AreaPair {
     }
 
     pub fn is_reservable(&self) -> bool {
-        self.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS) && self.includes_terminal(Terminal::TSA)
+        self.includes_any_terminal(&*ROUTE_5_AND_9_GULF_ISLAND_TERMINALS) && self.includes_terminal(Terminal::TSA)
     }
 }
 
@@ -482,6 +489,22 @@ mod tests {
         assert_eq!(
             DateRange { from: date!(2021 - 03 - 30), to: date!(2021 - 04 - 01) }.iter_days().collect::<Vec<_>>(),
             vec![date!(2021 - 03 - 30), date!(2021 - 03 - 31), date!(2021 - 04 - 01)]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_terminal_combinations() -> Result<()> {
+        assert_eq!(
+            Terminal::combinations(&[Terminal::CHM, Terminal::THT, Terminal::PEN]).collect::<HashSet<_>>(),
+            HashSet::from([
+                TerminalPair { from: Terminal::CHM, to: Terminal::PEN },
+                TerminalPair { from: Terminal::CHM, to: Terminal::THT },
+                TerminalPair { from: Terminal::PEN, to: Terminal::CHM },
+                TerminalPair { from: Terminal::PEN, to: Terminal::THT },
+                TerminalPair { from: Terminal::THT, to: Terminal::CHM },
+                TerminalPair { from: Terminal::THT, to: Terminal::PEN },
+            ])
         );
         Ok(())
     }

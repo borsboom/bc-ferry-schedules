@@ -277,7 +277,7 @@ impl<'a> SailingsModel<'a> {
 
     fn html(self) -> Html {
         let info_urls = if self.area_pair.includes_terminal(Terminal::SWB)
-            && self.area_pair.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS)
+            && self.area_pair.includes_any_terminal(&*ROUTE_5_AND_9_GULF_ISLAND_TERMINALS)
         {
             InformationUrlsModel {
                 sailing_status_url: SWB_SGI_SAILING_STATUS_URL,
@@ -285,7 +285,7 @@ impl<'a> SailingsModel<'a> {
                 service_notices_url: SWB_SGI_SERVICE_NOTICES_URL,
             }
         } else if self.area_pair.includes_terminal(Terminal::TSA)
-            && self.area_pair.includes_any_terminal(&*ROUTE5_GULF_ISLAND_TERMINALS)
+            && self.area_pair.includes_any_terminal(&*ROUTE_5_AND_9_GULF_ISLAND_TERMINALS)
         {
             InformationUrlsModel {
                 sailing_status_url: TSA_SGI_SAILING_STATUS_URL,

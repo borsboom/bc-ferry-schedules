@@ -1,5 +1,6 @@
 pub use anyhow::{anyhow, bail, ensure, Context, Result};
 pub use const_format::concatcp;
+pub use itertools::{Combinations, Itertools};
 pub use log;
 pub use log::{debug, error, info, warn};
 pub use once_cell::sync::{Lazy, OnceCell};

@@ -301,7 +301,7 @@ pub async fn scrape_schedules(options: &Options, cache: &Cache<'_>) -> Result<Ve
     let inner = async {
         let today = today_vancouver();
         let mut result = Vec::new();
-        for &terminal_pair in OTHER_ROUTES_TERMINAL_PAIRS.iter() {
+        for &terminal_pair in ALL_TERMINAL_PAIRS.iter() {
             result.extend(scrape_route_schedules(options, cache, terminal_pair, today).await?);
         }
         Ok(result) as Result<_>

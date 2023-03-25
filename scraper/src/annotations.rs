@@ -133,18 +133,20 @@ impl Annotations {
         for annotation_text in annotation_texts {
             let mut inner = || {
                 let annotation_text = regex!(r"\.$").replace(annotation_text.as_ref(), "");
-                let annotation_text = regex!(r"(?i) April ").replace_all(annotation_text.as_ref(), " Apr ");
-                let annotation_text = regex!(r", \d{4}").replace_all(annotation_text.as_ref(), "");
+                let annotation_text = regex!(r"(?i)\bApril\b").replace_all(annotation_text.as_ref(), "Apr");
+                let annotation_text = regex!(r", \d{4}\b").replace_all(annotation_text.as_ref(), "");
                 let annotation_text = regex!(r"(?i)( & |, and | and )").replace_all(annotation_text.as_ref(), ", ");
                 let annotation_text =
-                    regex!(r"(?i) ([a-z]{3})(\d{1,2})").replace_all(annotation_text.as_ref(), " $1 $2");
-                let annotation_text = regex!(r"(?i) ([a-z]{3} \d{1,2}) ([a-z]{3} \d{1,2})")
-                    .replace_all(annotation_text.as_ref(), " $1, $2");
-                let annotation_text = regex!(r"(?i) ([a-z]{3}) (\d{1,2}),? (\d{1,2}),? (\d{1,2})")
-                    .replace_all(annotation_text.as_ref(), " $1 $2, $1 $3, $1 $4");
-                let annotation_text = regex!(r"(?i) ([a-z]{3}) (\d{1,2}),? (\d{1,2})")
-                    .replace_all(annotation_text.as_ref(), " $1 $2, $1 $3");
-                let annotation_text = regex!(r"(?i)(DG Sailing only .*), no other passengers permitted")
+                    regex!(r"(?i)\b([a-z]{3})(\d{1,2})\b").replace_all(annotation_text.as_ref(), "$1 $2");
+                let annotation_text = regex!(r"(?i)\b([a-z]{3} \d{1,2}) ([a-z]{3} \d{1,2})\b")
+                    .replace_all(annotation_text.as_ref(), "$1, $2");
+                let annotation_text = regex!(r"(?i)\b([a-z]{3}) (\d{1,2}),? (\d{1,2}),? (\d{1,2})\b")
+                    .replace_all(annotation_text.as_ref(), "$1 $2, $1 $3, $1 $4");
+                let annotation_text = regex!(r"(?i)\b([a-z]{3}) (\d{1,2}),? (\d{1,2})\b")
+                    .replace_all(annotation_text.as_ref(), "$1 $2, $1 $3");
+                let annotation_text = regex!(r"(?i)^([a-z]{3} \d{1,2})(, [a-z]{3} \d{1,2})* only$")
+                    .replace(annotation_text.as_ref(), "Only $1$2");
+                let annotation_text = regex!(r"(?i)^(DG Sailing only .*), no other passengers permitted$")
                     .replace(annotation_text.as_ref(), "$1");
                 if let Some(captures) =
                     regex!(r"(?i)^\*(\d+:\d+ [AP]M) (Not Available|Only) on: (.*)\*").captures(annotation_text.as_ref())

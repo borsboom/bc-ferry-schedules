@@ -20,53 +20,28 @@ pub const TSA_SGI_SERVICE_NOTICES_URL: &str =
     concatcp!(ALL_SERVICE_NOTICES_URL, "#Metro%20Vancouver%20-%20Southern%20Gulf%20Islands");
 pub const THRU_FARE_INFORMATION_URL: &str = concatcp!(BCFERRIES_BASE_URL, "/routes-fares/ferry-fares/thru-fare");
 
-pub static ROUTE5_GULF_ISLAND_TERMINALS: Lazy<HashSet<Terminal>> =
+pub static ROUTE_5_AND_9_GULF_ISLAND_TERMINALS: Lazy<HashSet<Terminal>> =
     Lazy::new(|| HashSet::from_iter([Terminal::PLH, Terminal::POB, Terminal::PSB, Terminal::PST, Terminal::PVB]));
 
-pub static ROUTE5_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
-    HashSet::from_iter(
-        ROUTE5_GULF_ISLAND_TERMINALS
-            .iter()
-            .flat_map(|&from| {
-                ROUTE5_GULF_ISLAND_TERMINALS
-                    .iter()
-                    .filter(move |&to| from != *to)
-                    .chain(iter::once(&Terminal::SWB))
-                    .map(move |&to| TerminalPair { from, to })
-            })
-            .flat_map(|tp| [tp, tp.swapped()])
-            .filter(|&tp| tp != TerminalPair { from: Terminal::SWB, to: Terminal::PLH }),
-    )
+pub static ALL_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
+    let routes = [
+        // Route 1 (Tsawwassen/Swartz Bay)
+        vec![Terminal::TSA, Terminal::SWB],
+        // Route 4 (Fulford Harbour/Swartz Bay)
+        vec![Terminal::FUL, Terminal::SWB],
+        // Route 5 (Swartz Bay/Southern Gulf Islands)
+        vec![Terminal::SWB, Terminal::PLH, Terminal::POB, Terminal::PSB, Terminal::PST, Terminal::PVB],
+        // Route 6 (Vesuvius/Crofton)
+        vec![Terminal::VES, Terminal::CFT],
+        // Route 9 (Tsawwassen/Southern Gulf Islands)
+        vec![Terminal::TSA, Terminal::PLH, Terminal::POB, Terminal::PSB, Terminal::PST, Terminal::PVB],
+        // Route 12 (Brentwood/Mill Bay)
+        vec![Terminal::BTW, Terminal::MIL],
+        // Route 20 (Chemainus/Thetis/Penelakut)
+        vec![Terminal::CHM, Terminal::THT, Terminal::PEN],
+    ];
+    routes.iter().flat_map(|terminals| Terminal::combinations(terminals)).collect()
 });
-
-pub static OTHER_ROUTES_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
-    HashSet::from_iter(
-        [
-            TerminalPair { from: Terminal::BTW, to: Terminal::MIL },
-            TerminalPair { from: Terminal::CHM, to: Terminal::PEN },
-            TerminalPair { from: Terminal::CHM, to: Terminal::THT },
-            TerminalPair { from: Terminal::FUL, to: Terminal::SWB },
-            TerminalPair { from: Terminal::PEN, to: Terminal::THT },
-            TerminalPair { from: Terminal::PLH, to: Terminal::TSA },
-            TerminalPair { from: Terminal::POB, to: Terminal::TSA },
-            TerminalPair { from: Terminal::PSB, to: Terminal::TSA },
-            TerminalPair { from: Terminal::PST, to: Terminal::TSA },
-            TerminalPair { from: Terminal::PVB, to: Terminal::TSA },
-            TerminalPair { from: Terminal::SWB, to: Terminal::PLH },
-            TerminalPair { from: Terminal::SWB, to: Terminal::POB },
-            TerminalPair { from: Terminal::SWB, to: Terminal::PSB },
-            TerminalPair { from: Terminal::SWB, to: Terminal::PST },
-            TerminalPair { from: Terminal::SWB, to: Terminal::PVB },
-            TerminalPair { from: Terminal::SWB, to: Terminal::TSA },
-            TerminalPair { from: Terminal::VES, to: Terminal::CFT },
-        ]
-        .iter()
-        .flat_map(|&tp| [tp, tp.swapped()]),
-    )
-});
-
-pub static ALL_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> =
-    Lazy::new(|| HashSet::from_iter(ROUTE5_TERMINAL_PAIRS.union(&*OTHER_ROUTES_TERMINAL_PAIRS).cloned()));
 
 pub static ALL_AREA_PAIRS: Lazy<HashSet<AreaPair>> =
     Lazy::new(|| HashSet::from_iter(ALL_TERMINAL_PAIRS.iter().map(|tp| tp.area_pair())));

@@ -80,28 +80,6 @@ fn parse_depart_times_and_annotations(
     inner().context("Failed to parse depart times and row annotations")
 }
 
-fn parse_duration(duration_text: &str) -> Result<Duration> {
-    let inner = || {
-        let duration_captures = regex!(r"^((\d+)h)? ?((\d+)m)?$")
-            .captures(duration_text)
-            .ok_or_else(|| anyhow!("Invalid duration format: {:?}", duration_text))?;
-        let duration = match (duration_captures.get(2), duration_captures.get(4)) {
-            (None, None) => bail!("Expect minutes and/or hours in duration"),
-            (hours_text, minutes_text) => Duration::minutes(
-                hours_text
-                    .map(|m| m.as_str().parse::<i64>().expect("Expect duration hours to parse to integer"))
-                    .unwrap_or(0)
-                    * 60
-                    + minutes_text
-                        .map(|m| m.as_str().parse::<i64>().expect("Expect duration minutes to parse to integer"))
-                        .unwrap_or(0),
-            ),
-        };
-        Ok(duration) as Result<_>
-    };
-    inner().with_context(|| format!("Failed to parse duration: {:?}", duration_text))
-}
-
 fn parse_stops(stops_texts: Vec<String>) -> Result<Vec<Stop>> {
     let inner = || {
         let stops_chunks = stops_texts.chunks(2);
@@ -140,7 +118,7 @@ fn parse_complex_table(table_elem: ElementRef, date_range: &DateRange) -> Result
                 ensure!(depart_times.len() == 1, "Expect exactly one depart time in row");
                 let depart_time = depart_times.into_iter().next().expect("Expect at least one depart time in row");
                 let weekday = parse_weekday(weekday_text)?;
-                let arrive_time = parse_schedule_time(&element_text(&cell_elems[2]))?;
+                let arrive_time = parse_arrive_time_or_duration(depart_time.time, &element_text(&cell_elems[2]))?;
                 if arrive_time != depart_time.time {
                     let stops = parse_stops(element_texts(&cell_elems[4]))?;
                     let date_restriction = depart_time.row_dates.into_date_restriction_by_weekday(weekday);
@@ -247,9 +225,7 @@ async fn scrape_schedule(
             alerts: vec![],
         })) as Result<_>
     };
-    inner
-        .await
-        .with_context(|| format!("Failed to scrape other route schedule for {} from: {:?}", terminal_pair, source_url))
+    inner.await.with_context(|| format!("Failed to scrape route schedule for {} from: {:?}", terminal_pair, source_url))
 }
 
 pub async fn scrape_route_schedules(
@@ -292,9 +268,7 @@ pub async fn scrape_route_schedules(
         ensure!(!schedules.is_empty(), "Failed to find any schedule elements");
         Ok(schedules) as Result<_>
     };
-    inner
-        .await
-        .with_context(|| format!("Failed to scrape other route schedule for {} from: {:?}", terminal_pair, base_url))
+    inner.await.with_context(|| format!("Failed to scrape route schedule for {} from: {:?}", terminal_pair, base_url))
 }
 
 pub async fn scrape_schedules(options: &Options, cache: &Cache<'_>) -> Result<Vec<Schedule>> {

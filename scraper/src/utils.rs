@@ -34,14 +34,44 @@ pub fn parse_schedule_time(text: &str) -> Result<Time> {
     bail!("Invalid schedule time: {:?}", text);
 }
 
+pub fn parse_duration(duration_text: &str) -> Result<Duration> {
+    let inner = || {
+        let duration_captures = regex!(r"^((\d+)h)? ?((\d+)m)?$")
+            .captures(duration_text)
+            .ok_or_else(|| anyhow!("Invalid duration format: {:?}", duration_text))?;
+        let duration = match (duration_captures.get(2), duration_captures.get(4)) {
+            (None, None) => bail!("Expect minutes and/or hours in duration"),
+            (hours_text, minutes_text) => Duration::minutes(
+                hours_text
+                    .map(|m| m.as_str().parse::<i64>().expect("Expect duration hours to parse to integer"))
+                    .unwrap_or(0)
+                    * 60
+                    + minutes_text
+                        .map(|m| m.as_str().parse::<i64>().expect("Expect duration minutes to parse to integer"))
+                        .unwrap_or(0),
+            ),
+        };
+        Ok(duration) as Result<_>
+    };
+    inner().with_context(|| format!("Failed to parse duration: {:?}", duration_text))
+}
+
+pub fn parse_arrive_time_or_duration(depart_time: Time, text: &str) -> Result<Time> {
+    parse_schedule_time(text)
+        .or_else(|time_err| parse_duration(text).map(|dur| depart_time + dur).context(time_err))
+        .with_context(|| format!("Failed to parse arrive time or duration: {:?}", text))
+}
+
 fn terminal_from_schedule_stop_text(stop_text: &str) -> Result<Terminal> {
     let stop_text = stop_text.to_lowercase();
     match &stop_text[..] {
         "chemainus" => Ok(Terminal::CHM),
         "galiano" | "galiano island (sturdies bay)" => Ok(Terminal::PSB),
-        "mayne" | "mayne island (village bay)" | "mayne island (village bay" | "mayne island {village bay)" => {
-            Ok(Terminal::PVB)
-        }
+        "mayne"
+        | "mayne island (village bay)"
+        | "mayne island (village bay"
+        | "mayne island {village bay)"
+        | "mayne island (village bay)except on oct 9" => Ok(Terminal::PVB),
         "pender" | "pender island (otter bay)" => Ok(Terminal::POB),
         "penelakut island (telegraph harbour)" => Ok(Terminal::PEN),
         "salt spring" | "salt spring island (long harbour)" => Ok(Terminal::PLH),

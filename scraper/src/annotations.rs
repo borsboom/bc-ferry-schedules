@@ -129,7 +129,6 @@ impl Annotations {
         annotation_texts: I,
         date_range: &DateRange,
     ) -> Result<()> {
-        let from_year = date_range.from.year();
         for annotation_text in annotation_texts {
             let mut inner = || {
                 let annotation_text = regex!(r"\.$").replace(annotation_text.as_ref(), "");
@@ -166,15 +165,21 @@ impl Annotations {
                         other => bail!("Expect \"Not Available\" or \"Only\" in: {:?}", other),
                     };
                     for date_text in captures[3].split(',').map(|s| s.trim()) {
-                        let parsed_date = Date::parse(
-                            &format!("{} {}", date_text, from_year),
-                            format_description!("[day padding:none] [month repr:short case_sensitive:false] [year]"),
-                        )
-                        .with_context(|| format!("Failed to parse date {:?} in {:?}", date_text, annotation_text))?;
-                        let date = date_range.make_year_within(parsed_date).with_context(|| {
-                            format!("Date is outside date range of schedule ({}): {:?}", date_range, parsed_date)
-                        })?;
-                        dates_hashset.insert(date);
+                        let date_within_range = date_range
+                            .parse_date_within(
+                                date_text,
+                                format_description!(
+                                    "[day padding:none] [month repr:short case_sensitive:false] [year]"
+                                ),
+                            )
+                            .with_context(|| {
+                                format!("Failed to parse sailing date {:?} in {:?}", date_text, annotation_text)
+                            })?;
+                        if let Some(date) = date_within_range {
+                            dates_hashset.insert(date);
+                        } else {
+                            warn!("Date is outside date range of schedule ({}): {:?}", date_range, date_text);
+                        }
                     }
                 } else if let Some(captures) =
                     regex!(r"(?i)^(Except|Only|DG Sailing only)( on)? (.*)").captures(annotation_text.as_ref())
@@ -186,15 +191,21 @@ impl Annotations {
                         other => bail!("Expect \"Except\", \"Only\", or \"DG Sailing only\" in: {:?}", other),
                     };
                     for date_text in captures[3].split(&[',', '&']).map(|s| s.trim()) {
-                        let parsed_date = Date::parse(
-                            &format!("{} {}", date_text, from_year),
-                            format_description!("[month repr:short case_sensitive:false] [day padding:none] [year]"),
-                        )
-                        .with_context(|| format!("Failed to parse date {:?} in: {:?}", date_text, annotation_text))?;
-                        let date = date_range.make_year_within(parsed_date).with_context(|| {
-                            format!("Date is outside date range of schedule ({}): {:?}", date_range, parsed_date)
-                        })?;
-                        dates_hashset.insert(date);
+                        let date_within_range = date_range
+                            .parse_date_within(
+                                date_text,
+                                format_description!(
+                                    "[month repr:short case_sensitive:false] [day padding:none] [year]"
+                                ),
+                            )
+                            .with_context(|| {
+                                format!("Failed to parse date {:?} in {:?}", date_text, annotation_text)
+                            })?;
+                        if let Some(date) = date_within_range {
+                            dates_hashset.insert(date);
+                        } else {
+                            warn!("Date is outside date range of schedule ({}): {:?}", date_range, date_text);
+                        }
                     }
                 } else {
                     let replaced_annotation_text = regex!(r"([!#*]*)\s*").replace(annotation_text.as_ref(), "$1 ");

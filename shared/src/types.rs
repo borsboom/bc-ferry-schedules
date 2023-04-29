@@ -327,41 +327,22 @@ impl DateRange {
         date >= self.from && date <= self.to
     }
 
-    pub fn make_year_within(&self, orig_date: Date) -> Result<Date> {
-        const ERROR_DATE_FORMAT: &TimeFormat = format_description!("[month repr:short] [day padding:none]");
+    pub fn parse_date_within(&self, text: &str, format: &(impl Parsable + ?Sized)) -> Result<Option<Date>> {
         let inner = || {
-            let fixed_date = if orig_date < self.from {
-                let from_date = Date::from_calendar_date(self.from.year(), orig_date.month(), orig_date.day())?;
-                if from_date < self.from {
-                    Date::from_calendar_date(self.from.year() + 1, from_date.month(), from_date.day())?
-                } else {
-                    from_date
-                }
-            } else if orig_date > self.to {
-                let to_date = Date::from_calendar_date(self.to.year(), orig_date.month(), orig_date.day())?;
-                if to_date > self.to {
-                    Date::from_calendar_date(self.to.year() - 1, to_date.month(), to_date.day())?
-                } else {
-                    to_date
-                }
-            } else {
-                orig_date
-            };
-            ensure!(
-                self.includes_date_inclusive(fixed_date),
-                "{} is not within date range {}",
-                fixed_date.format(ERROR_DATE_FORMAT).expect("Expect date within year to format"),
-                self,
-            );
-            Ok(fixed_date)
+            // We use year 2020 since it is a leap year, so Feb 29 will parse successfully.
+            let parsed_date = Date::parse(&format!("{} {}", text, 2020), format)?;
+            match Date::from_calendar_date(self.from.year(), parsed_date.month(), parsed_date.day()) {
+                Ok(from_year_date) if self.includes_date_inclusive(from_year_date) => Ok(Some(from_year_date)),
+                _ if self.from.year() == self.to.year() => Ok(None) as Result<_>,
+                _ => match Date::from_calendar_date(self.to.year(), parsed_date.month(), parsed_date.day()) {
+                    Ok(to_year_date) if self.includes_date_inclusive(to_year_date) => {
+                        Ok(Some(to_year_date)) as Result<_>
+                    }
+                    _ => Ok(None) as Result<_>,
+                },
+            }
         };
-        inner().with_context(|| {
-            format!(
-                "Failed to make date {} within range {}",
-                orig_date.format(ERROR_DATE_FORMAT).expect("Expect date within year to format"),
-                self
-            )
-        })
+        inner().with_context(|| format!("Failed to parse date within range {}: {:?}", self, text))
     }
 
     pub fn parse(text: &str, date_format: &TimeFormat, separator: &str) -> Result<DateRange> {
@@ -456,14 +437,15 @@ mod tests {
 
     #[test]
     fn test_date_range_make_year_within() -> Result<()> {
-        let range = DateRange { from: date!(2021 - 10 - 01), to: date!(2022 - 03 - 31) };
-        assert_eq!(range.make_year_within(date!(2021 - 03 - 31))?, date!(2022 - 03 - 31));
-        assert_eq!(range.make_year_within(date!(2022 - 10 - 01))?, date!(2021 - 10 - 01));
-        assert_eq!(range.make_year_within(date!(2021 - 02 - 12))?, date!(2022 - 02 - 12));
-        assert_eq!(range.make_year_within(date!(2022 - 11 - 23))?, date!(2021 - 11 - 23));
-        assert!(range.make_year_within(date!(2022 - 04 - 01)).is_err());
-        assert!(range.make_year_within(date!(2021 - 09 - 30)).is_err());
-        assert!(range.make_year_within(date!(2021 - 07 - 15)).is_err());
+        let format = format_description!("[month repr:short case_sensitive:false] [day padding:none] [year]");
+        let range = DateRange { from: date!(2023 - 10 - 01), to: date!(2024 - 03 - 31) };
+        assert_eq!(range.parse_date_within("Mar 31", format)?, Some(date!(2024 - 03 - 31)));
+        assert_eq!(range.parse_date_within("Oct 01", format)?, Some(date!(2023 - 10 - 01)));
+        assert_eq!(range.parse_date_within("Feb 29", format)?, Some(date!(2024 - 02 - 29)));
+        assert_eq!(range.parse_date_within("Nov 23", format)?, Some(date!(2023 - 11 - 23)));
+        assert!(range.parse_date_within("Apr 01", format)?.is_none());
+        assert!(range.parse_date_within("Sep 30", format)?.is_none());
+        assert!(range.parse_date_within("Jul 15", format)?.is_none());
         Ok(())
     }
 

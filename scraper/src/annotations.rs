@@ -222,6 +222,8 @@ impl Annotations {
                         "Dangerous goods only" |
                         "Dangerous goods sailing" |
                         "DG Sailing only, No other passengers permitted" |
+                        "No passengers permitted - DG Sailing only" |
+                        "No passengers permitted - only sails on Apr 6, Apr 20, May 4, May 18, Jun 1, Jun 15, Jun 29, Jul 13, Jul 27, Aug 10, Aug 24, Sep 7, Sep 21, Oct 5, Oct 19, Nov 2, Nov 16, Nov 30, Dec 14, Dec 28, Jan 11, Jan 25, Feb 8, Feb 22, Mar 7, Mar 21" |
                         "No passengers permitted - only sails on Jul 2, Jul 16, Jul 30, Aug 13, Aug 27" |
                         "No passengers permitted - only sails on Jul 9, Jul 23, Aug 6, Aug 20, Sep 3" |
                         "No passengers permitted - only sails on May 14, 28, Jun 11 & 25" |

@@ -7,33 +7,22 @@ use crate::macros::*;
 use crate::types::*;
 use crate::utils::*;
 
-#[derive(Debug)]
-struct ScheduleQuery {
-    pub date_range: DateRange,
-    pub is_complex_schedule: bool,
-}
-
-impl ScheduleQuery {
-    fn parse(schedule_path_query: &str) -> Result<ScheduleQuery> {
-        let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R[0-9]+_([0-9_]*)")
-            .captures(schedule_path_query)
-            .ok_or_else(|| {
-                anyhow!(
-                    "Failed to find departureDate or departureDateCode=R9 in schedule path/query: {:?}",
-                    schedule_path_query
-                )
-            })?;
-        let (text, separator, is_complex_schedule) = match (captures.get(1), captures.get(2)) {
-            (Some(text), _) => (text, "-", false),
-            (None, Some(text)) => (text, "_", true),
-            (None, None) => panic!("Expect capture to be available when regex matches"),
-        };
-        Ok(ScheduleQuery {
-            date_range: DateRange::parse(text.as_str(), format_description!("[year][month][day]"), separator)
-                .with_context(|| format!("Failed to parse schedule path/query date range: {:?}", text))?,
-            is_complex_schedule,
-        })
-    }
+fn parse_schedule_path_query(schedule_path_query: &str) -> Result<DateRange> {
+    let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R[0-9]+_([0-9_]*)")
+        .captures(schedule_path_query)
+        .ok_or_else(|| {
+            anyhow!(
+                "Failed to find departureDate or departureDateCode=R9 in schedule path/query: {:?}",
+                schedule_path_query
+            )
+        })?;
+    let (text, separator) = match (captures.get(1), captures.get(2)) {
+        (Some(text), _) => (text, "-"),
+        (None, Some(text)) => (text, "_"),
+        (None, None) => panic!("Expect capture to be available when regex matches"),
+    };
+    DateRange::parse(text.as_str(), format_description!("[year][month][day]"), separator)
+        .with_context(|| format!("Failed to parse schedule path/query date range: {:?}", text))
 }
 
 fn parse_annotations(
@@ -89,7 +78,7 @@ fn parse_stops(stops_texts: Vec<String>) -> Result<Vec<Stop>> {
     inner().with_context(|| format!("Failed to parse stops: {:?}", stops_texts))
 }
 
-fn parse_complex_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
+fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
     let inner = || {
         let mut items = Vec::new();
         for day_row_elem in table_elem.select(selector!("thead tr")) {
@@ -133,52 +122,7 @@ fn parse_complex_table(table_elem: ElementRef, date_range: &DateRange) -> Result
         }
         ScheduleItem::merge_items(items)
     };
-    inner().context("Failed to parse complex route schedule table")
-}
-
-fn parse_simple_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
-    let inner = || {
-        let mut last_row_weekday = None;
-        let mut items = Vec::new();
-        for row_elem in table_elem.select(selector!("tr.schedule-table-row")) {
-            let cell_elems: Vec<_> = row_elem.select(selector!("td")).collect();
-            ensure!(
-                cell_elems.len() == 6,
-                "Row should have six cells: {:?}",
-                cell_elems.iter().map(element_text).collect::<Vec<_>>()
-            );
-            let (annotations, depart_times_texts) = match parse_annotations(element_texts(&cell_elems[2]), date_range)?
-            {
-                None => continue,
-                Some(result) => result,
-            };
-            let depart_times = parse_depart_times_and_annotations(depart_times_texts, &annotations)?;
-            let day_text = element_text(&cell_elems[1]);
-            let weekday = if day_text.is_empty() {
-                last_row_weekday.context("First row should have weekday")?
-            } else {
-                parse_weekday(&day_text)?
-            };
-            let duration = parse_duration(&element_text(&cell_elems[3]))?;
-            let stops = parse_stops(element_texts(&cell_elems[4]))?;
-            for depart_time in depart_times {
-                let date_restriction = depart_time.row_dates.into_date_restriction_by_weekday(weekday);
-                let notes = annotation_notes_date_restictions(depart_time.row_notes, weekday, &date_restriction);
-                items.push(ScheduleItem {
-                    sailing: Sailing {
-                        depart_time: depart_time.time,
-                        arrive_time: depart_time.time + duration,
-                        stops: stops.clone(),
-                    },
-                    weekdays: HashMap::from_iter([(weekday, date_restriction)]),
-                    notes,
-                });
-            }
-            last_row_weekday = Some(weekday);
-        }
-        ScheduleItem::merge_items(items)
-    };
-    inner().context("Failed to parse simple route schedule table")
+    inner().context("Failed to parse route schedule table")
 }
 
 async fn scrape_schedule(
@@ -190,7 +134,7 @@ async fn scrape_schedule(
     today: Date,
 ) -> Result<Option<Schedule>> {
     let inner = async {
-        let ScheduleQuery { date_range, is_complex_schedule } = ScheduleQuery::parse(schedule_path_query_text)
+        let date_range = parse_schedule_path_query(schedule_path_query_text)
             .with_context(|| format!("Failed to schedule path/query: {:?}", schedule_path_query_text))?;
         if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
@@ -211,11 +155,7 @@ async fn scrape_schedule(
             .select(selector!("div.seasonal-schedule-wrapper table"))
             .next()
             .ok_or_else(|| anyhow!("Missing table element in schedule"))?;
-        let items = if is_complex_schedule {
-            parse_complex_table(table_elem, &date_range)?
-        } else {
-            parse_simple_table(table_elem, &date_range)?
-        };
+        let items = parse_table(table_elem, &date_range)?;
         Ok(Some(Schedule {
             terminal_pair,
             date_range,

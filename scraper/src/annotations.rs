@@ -165,42 +165,28 @@ impl Annotations {
                         other => bail!("Expect \"Not Available\" or \"Only\" in: {:?}", other),
                     };
                     for date_text in captures[3].split(',').map(|s| s.trim()) {
-                        let date_within_range = date_range
-                            .parse_date_within(
-                                date_text,
-                                format_description!(
-                                    "[day padding:none] [month repr:short case_sensitive:false] [year]"
-                                ),
-                            )
-                            .with_context(|| {
-                                format!("Failed to parse sailing date {:?} in {:?}", date_text, annotation_text)
-                            })?;
+                        let date_within_range = date_range.parse_date_within(date_text).with_context(|| {
+                            format!("Failed to parse sailing date {:?} in {:?}", date_text, annotation_text)
+                        })?;
                         if let Some(date) = date_within_range {
                             dates_hashset.insert(date);
                         } else {
                             warn!("Date is outside date range of schedule ({}): {:?}", date_range, date_text);
                         }
                     }
-                } else if let Some(captures) =
-                    regex!(r"(?i)^(Except|Only|DG Sailing only)( on)? (.*)").captures(annotation_text.as_ref())
+                } else if let Some(captures) = regex!(r"(?i)^(Except|Not Available|Only|DG Sailing only)( on)?:? (.*)")
+                    .captures(annotation_text.as_ref())
                 {
                     let dates_hashset = match &captures[1] {
-                        "Except" => &mut self.all_dates.except,
+                        "Except" | "Not Available" => &mut self.all_dates.except,
                         "Only" => &mut self.all_dates.only,
                         "DG Sailing only" => &mut self.dg_dates.only,
                         other => bail!("Expect \"Except\", \"Only\", or \"DG Sailing only\" in: {:?}", other),
                     };
                     for date_text in captures[3].split(&[',', '&']).map(|s| s.trim()) {
-                        let date_within_range = date_range
-                            .parse_date_within(
-                                date_text,
-                                format_description!(
-                                    "[month repr:short case_sensitive:false] [day padding:none] [year]"
-                                ),
-                            )
-                            .with_context(|| {
-                                format!("Failed to parse date {:?} in {:?}", date_text, annotation_text)
-                            })?;
+                        let date_within_range = date_range.parse_date_within(date_text).with_context(|| {
+                            format!("Failed to parse date {:?} in {:?}", date_text, annotation_text)
+                        })?;
                         if let Some(date) = date_within_range {
                             dates_hashset.insert(date);
                         } else {

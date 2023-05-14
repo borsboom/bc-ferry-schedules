@@ -116,13 +116,13 @@ pub fn should_scrape_schedule_date(schedule_date_range: DateRange, today: Date, 
 
 pub fn parse_weekday(text: &str) -> Result<Weekday> {
     match text {
-        "mon" | "Mondays" => Ok(Weekday::Monday),
-        "tue" | "Tuesdays" => Ok(Weekday::Tuesday),
-        "wed" | "Wednesdays" => Ok(Weekday::Wednesday),
-        "thu" | "Thursdays" => Ok(Weekday::Thursday),
-        "fri" | "Fridays" => Ok(Weekday::Friday),
-        "sat" | "Saturdays" => Ok(Weekday::Saturday),
-        "sun" | "Sundays" => Ok(Weekday::Sunday),
+        "mon" | "Mondays" | "MONDAY" => Ok(Weekday::Monday),
+        "tue" | "Tuesdays" | "TUESDAY" => Ok(Weekday::Tuesday),
+        "wed" | "Wednesdays" | "WEDNESDAY" => Ok(Weekday::Wednesday),
+        "thu" | "Thursdays" | "THURSDAY" => Ok(Weekday::Thursday),
+        "fri" | "Fridays" | "FRIDAY" => Ok(Weekday::Friday),
+        "sat" | "Saturdays" | "SATURDAY" => Ok(Weekday::Saturday),
+        "sun" | "Sundays" | "SUNDAY" => Ok(Weekday::Sunday),
         _ => bail!("Unrecognized day text: {:?}", text),
     }
 }

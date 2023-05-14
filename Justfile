@@ -3,6 +3,7 @@ set positional-arguments
 
 export AWS_PAGER := ""
 
+difftool := env_var_or_default("DIFFTOOL", "diff -u")
 schedules_key := "data/schedules.json"
 local_schedules_file := "frontend/local/" + schedules_key
 upload_data_args := '--output-s3-bucket "$S3_BUCKET" --output-s3-key ' + quote(schedules_key) + ' --invalidate-cloudfront-distribution-id "$CLOUDFRONT_DISTRIBUTION_ID"'
@@ -55,7 +56,7 @@ compare-data: local-data
     aws s3 cp "s3://$S3_BUCKET/"{{ quote(schedules_key) }} tmp/compare_old_data_unformatted.json
     jq --sort-keys {{ quote(normalize_data_jq) }} < tmp/compare_old_data_unformatted.json >tmp/compare_old_data.json
     jq --sort-keys {{ quote(normalize_data_jq) }} <{{ quote(local_schedules_file) }} >tmp/compare_new_data.json
-    diff -u tmp/compare_old_data.json tmp/compare_new_data.json
+    {{ difftool }} tmp/compare_old_data.json tmp/compare_new_data.json
 
 scraper-coverage:
     # See https://blog.rng0.io/how-to-do-code-coverage-in-rust

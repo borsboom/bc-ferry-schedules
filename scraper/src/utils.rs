@@ -73,7 +73,7 @@ fn terminal_from_schedule_stop_text(stop_text: &str) -> Result<Terminal> {
         | "mayne island {village bay)"
         | "mayne island (village bay)except on oct 9" => Ok(Terminal::PVB),
         "pender" | "pender island (otter bay)" => Ok(Terminal::POB),
-        "penelakut island (telegraph harbour)" => Ok(Terminal::PEN),
+        "penelakut island (telegraph harbour)" | "enelakut island (telegraph harbour)" => Ok(Terminal::PEN),
         "salt spring" | "salt spring island (long harbour)" => Ok(Terminal::PLH),
         "saturna" | "saturna island (lyall harbour)" | "saturna island (lyall harbour" => Ok(Terminal::PST),
         "thetis island (preedy harbour)" => Ok(Terminal::THT),

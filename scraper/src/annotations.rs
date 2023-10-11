@@ -204,21 +204,12 @@ impl Annotations {
                                 "Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time may be provided loading priority on this sailing"
                             );
                         }
-                        "* On Dec 26, Jan 2, Feb 20, the Monday schedule is in effect until 2:00pm, the Holiday Monday Schedule is in effect after 2:00 pm" => {}
                         "Dangerous goods only" |
-                        "Dangerous goods sailing" |
-                        "DG Sailing only, No other passengers permitted" |
                         "No passengers permitted - DG Sailing only" |
-                        "No passengers permitted - only sails on Apr 6, Apr 20, May 4, May 18, Jun 1, Jun 15, Jun 29, Jul 13, Jul 27, Aug 10, Aug 24, Sep 7, Sep 21, Oct 5, Oct 19, Nov 2, Nov 16, Nov 30, Dec 14, Dec 28, Jan 11, Jan 25, Feb 8, Feb 22, Mar 7, Mar 21" |
-                        "No passengers permitted - only sails on Jul 2, Jul 16, Jul 30, Aug 13, Aug 27" |
-                        "No passengers permitted - only sails on Jul 9, Jul 23, Aug 6, Aug 20, Sep 3" |
-                        "No passengers permitted - only sails on May 14, 28, Jun 11 & 25" |
-                        "No passengers permitted - only sails on May 14, May 28, Jun 11, Jun 25" |
-                        "No passengers permitted - only sails on May 7, May 21, Jun 4, Jun 18" |
                         "No passengers permitted - only sails on Oct 15, Oct 29, Nov 12, Nov 26, Dec 10, Dec 24, Jan 7, Jan 21, Feb 4, Feb 18, Mar 3, Mar 17, Mar 31" |
                         "No passengers permitted - only sails on Oct 22, Nov 5, Nov 19, Dec 3, Dec 17, Dec 31, Jan 14, Jan 28, Feb 11, Feb 25, Mar 10, Mar 24" |
-                        "No passengers permitted - only sails on Sep 10, Sep 24, Oct 8" |
-                        "No passengers permitted - only sails on Sep 17, Oct 1" => {
+                        "No passengers permitted - only sails on Oct 19, Nov 2, Nov 16, Nov 30" |
+                        "No passengers permitted - only sails on Dec 14, Dec 28, Jan 11, Jan 25, Feb 8, Feb 22, Mar 7, Mar 21" => {
                             self.is_dg_only = true;
                         }
                         "Foot passengers only" => {

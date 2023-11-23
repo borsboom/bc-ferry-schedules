@@ -198,10 +198,10 @@ impl Annotations {
                     let replaced_annotation_text = regex!(r"[\.,]$").replace(replaced_annotation_text.as_ref(), "");
                     let annotation_text = replaced_annotation_text.as_ref().trim();
                     match annotation_text {
-                        "! Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time may be provided loading priority on this sailing" => {
+                        "! Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time are offered priority on this sailing" => {
                             text_date_restriction(
                                 &mut self.all_notes,
-                                "Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time may be provided loading priority on this sailing"
+                                "Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time are offered priority on this sailing"
                             );
                         }
                         "Dangerous goods only" |

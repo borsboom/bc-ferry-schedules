@@ -209,7 +209,10 @@ impl Annotations {
                         "No passengers permitted - only sails on Oct 15, Oct 29, Nov 12, Nov 26, Dec 10, Dec 24, Jan 7, Jan 21, Feb 4, Feb 18, Mar 3, Mar 17, Mar 31" |
                         "No passengers permitted - only sails on Oct 22, Nov 5, Nov 19, Dec 3, Dec 17, Dec 31, Jan 14, Jan 28, Feb 11, Feb 25, Mar 10, Mar 24" |
                         "No passengers permitted - only sails on Oct 19, Nov 2, Nov 16, Nov 30" |
-                        "No passengers permitted - only sails on Dec 14, Dec 28, Jan 11, Jan 25, Feb 8, Feb 22, Mar 7, Mar 21" => {
+                        "No passengers permitted - only sails on Dec 14, Dec 28, Jan 11, Jan 25, Feb 8, Feb 22, Mar 7, Mar 21" |
+                        "No passengers permitted - only sails on Apr 4, Apr 18, May 2, May 16, May 30, Jun 13, Jun 27, Jul 11, Jul 25, Aug 8, Aug 22, Sep 5, Sep 19, Oct 3, Oct 17, Oct 31, Nov 14, Nov 28, Dec 12, Dec 26, Jan 9, Jan 23, Feb 6, Feb 20, Mar 6, Mar 20"  |
+                        "No passengers permitted - only sails on Apr 7, Apr 21" |
+                        "No passengers permitted - only sails on Apr 14, Apr 28" => {
                             self.is_dg_only = true;
                         }
                         "Foot passengers only" => {

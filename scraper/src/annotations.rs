@@ -218,6 +218,9 @@ impl Annotations {
                         "Foot passengers only" => {
                             text_date_restriction(&mut self.all_notes, "Foot passengers only");
                         }
+                        "Note: This sailing departs just after midnight" => {
+                            text_date_restriction(&mut self.all_notes, "Note: This sailing departs just after midnight");
+                        }
                         "No sailings available on this route for these dates" => {}
                         _ => bail!("Unrecognized annotation text: {:?}", annotation_text),
                     }

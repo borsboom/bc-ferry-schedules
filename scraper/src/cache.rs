@@ -56,6 +56,7 @@ impl<'a> Cache<'a> {
             cache_path.push(self.project_dirs.cache_dir());
             let cache_filename = format!("{}_{}", regex!(r"[^\w\d-]+").replace_all(url, "_"), calculate_hash(&url));
             cache_path.push(&cache_filename);
+            debug!("Cache path: {:?}", cache_path);
             if let Ok(cache_metadata) = fs::metadata(&cache_path) {
                 let cache_modified_time: OffsetDateTime = cache_metadata.modified()?.into();
                 if OffsetDateTime::now_utc() - cache_modified_time < self.max_cache_age {

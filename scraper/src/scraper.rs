@@ -130,6 +130,7 @@ async fn scrape_schedule(
     source_url: &str,
     document: &Html,
     terminal_pair: TerminalPair,
+    index: usize,
     schedule_path_query_text: &str,
     today: Date,
 ) -> Result<Option<Schedule>> {
@@ -151,19 +152,24 @@ async fn scrape_schedule(
             }));
         }
         info!("Parsing schedule for {}, {}", terminal_pair, date_range);
-        let table_elem = document
-            .select(selector!("div.seasonal-schedule-wrapper table"))
-            .next()
-            .ok_or_else(|| anyhow!("Missing table element in schedule"))?;
-        let items = parse_table(table_elem, &date_range)?;
-        Ok(Some(Schedule {
-            terminal_pair,
-            date_range,
-            items,
-            source_url: source_url.to_string(),
-            refreshed_at: now_vancouver(),
-            alerts: vec![],
-        })) as Result<_>
+        let opt_table_elem = document.select(selector!("div.seasonal-schedule-wrapper table")).next();
+        if let Some(table_elem) = opt_table_elem {
+            let items = parse_table(table_elem, &date_range)?;
+            Ok(Some(Schedule {
+                terminal_pair,
+                date_range,
+                items,
+                source_url: source_url.to_string(),
+                refreshed_at: now_vancouver(),
+                alerts: vec![],
+            })) as Result<_>
+        } else if index == 0 {
+            // If the table element is missing in the initial schedule page for the route, we have a problem
+            bail!("Missing table element in schedule");
+        } else {
+            // However, sometimes the initial page has links to non-existent schedules in which case we can ignore them
+            Ok(None)
+        }
     };
     inner.await.with_context(|| format!("Failed to scrape route schedule for {} from: {:?}", terminal_pair, source_url))
 }
@@ -192,15 +198,24 @@ pub async fn scrape_route_schedules(
                 anyhow!("Missing schedule path/query in date range link element: {}", schedule_path_query_elem.html())
             })?;
             let opt_schedule = if index == 0 {
-                scrape_schedule(options, &base_url, &base_document, terminal_pair, schedule_path_query_text, today)
-                    .await?
+                scrape_schedule(
+                    options,
+                    &base_url,
+                    &base_document,
+                    terminal_pair,
+                    index,
+                    schedule_path_query_text,
+                    today,
+                )
+                .await?
             } else {
                 let source_url = format!("{}{}", BCFERRIES_BASE_URL, schedule_path_query_text);
                 let document = cache
                     .get_html(&source_url, &HTML_ERROR_REGEX)
                     .await
                     .with_context(|| format!("Failed to download schedule HTML from: {:?}", source_url))?;
-                scrape_schedule(options, &source_url, &document, terminal_pair, schedule_path_query_text, today).await?
+                scrape_schedule(options, &source_url, &document, terminal_pair, index, schedule_path_query_text, today)
+                    .await?
             };
             opt_schedule.iter().for_each(|s| debug!("Parsed schedule: {:#?}", s));
             schedules.extend(opt_schedule);

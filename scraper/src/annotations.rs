@@ -131,7 +131,7 @@ impl Annotations {
     ) -> Result<()> {
         for annotation_text in annotation_texts {
             let mut inner = || {
-                let annotation_text = regex!(r"\.$").replace(annotation_text.as_ref(), "");
+                let annotation_text = regex!(r"\.*$").replace(annotation_text.as_ref(), "");
                 let annotation_text = regex!(r"(?i)\bApril\b").replace_all(annotation_text.as_ref(), "Apr");
                 let annotation_text = regex!(r", \d{4}\b").replace_all(annotation_text.as_ref(), "");
                 let annotation_text = regex!(r"(?i)( & |, and | and )").replace_all(annotation_text.as_ref(), ", ");

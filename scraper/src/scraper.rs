@@ -39,7 +39,7 @@ fn parse_annotations(
             } else {
                 match trimed_commas.as_ref() {
                     "" => continue,
-                    text => annotations.parse([text], date_range)?,
+                    text => annotations.parse(date_range, [text])?,
                 }
             }
         }

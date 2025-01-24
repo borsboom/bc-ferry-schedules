@@ -124,106 +124,115 @@ impl Annotations {
         }
     }
 
-    pub fn parse<T: AsRef<str>, I: IntoIterator<Item = T>>(
-        &mut self,
-        annotation_texts: I,
-        date_range: &DateRange,
-    ) -> Result<()> {
-        for annotation_text in annotation_texts {
-            let mut inner = || {
-                let annotation_text = regex!(r"\.*$").replace(annotation_text.as_ref(), "");
-                let annotation_text = regex!(r"(?i)\bApril\b").replace_all(annotation_text.as_ref(), "Apr");
-                let annotation_text = regex!(r", \d{4}\b").replace_all(annotation_text.as_ref(), "");
-                let annotation_text = regex!(r"(?i)( & |, and | and )").replace_all(annotation_text.as_ref(), ", ");
-                let annotation_text =
-                    regex!(r"(?i)\b([a-z]{3})(\d{1,2})\b").replace_all(annotation_text.as_ref(), "$1 $2");
-                let annotation_text = regex!(r"(?i)\b([a-z]{3} \d{1,2}) ([a-z]{3} \d{1,2})\b")
-                    .replace_all(annotation_text.as_ref(), "$1, $2");
-                let annotation_text = regex!(r"(?i)\b([a-z]{3}) (\d{1,2}),? (\d{1,2}),? (\d{1,2})\b")
-                    .replace_all(annotation_text.as_ref(), "$1 $2, $1 $3, $1 $4");
-                let annotation_text = regex!(r"(?i)\b([a-z]{3}) (\d{1,2}),? (\d{1,2})\b")
-                    .replace_all(annotation_text.as_ref(), "$1 $2, $1 $3");
-                let annotation_text = regex!(r"(?i)^([a-z]{3} \d{1,2})(, [a-z]{3} \d{1,2})* only$")
-                    .replace(annotation_text.as_ref(), "Only $1$2");
-                let annotation_text = regex!(r"(?i)^(DG Sailing only .*), no other passengers permitted$")
-                    .replace(annotation_text.as_ref(), "$1");
-                if let Some(captures) =
-                    regex!(r"(?i)^\*(\d+:\d+ [AP]M) (Not Available|Only) on: (.*)\*").captures(annotation_text.as_ref())
-                {
-                    let time_text = &captures[1];
-                    let time = Time::parse(
-                        time_text,
-                        format_description!(
-                            "[hour repr:12 padding:none]:[minute] [period case:lower case_sensitive:false]"
-                        ),
-                    )
-                    .with_context(|| format!("Failed to parse time: {:?}", time_text))?;
-                    let dates = self.star_dates_by_time.entry(time).or_insert_with(AnnotationDates::new);
-                    let dates_hashset = match &captures[2] {
-                        "Not Available" => &mut dates.except,
-                        "Only" => &mut dates.only,
-                        other => bail!("Expect \"Not Available\" or \"Only\" in: {:?}", other),
-                    };
-                    for date_text in captures[3].split(',').map(|s| s.trim()) {
-                        let date_within_range = date_range.parse_date_within(date_text).with_context(|| {
-                            format!("Failed to parse sailing date {:?} in {:?}", date_text, annotation_text)
-                        })?;
-                        if let Some(date) = date_within_range {
-                            dates_hashset.insert(date);
-                        } else {
-                            warn!("Date is outside date range of schedule ({}): {:?}", date_range, date_text);
-                        }
-                    }
-                } else if let Some(captures) = regex!(r"(?i)^(Except|Not Available|Only|DG Sailing only)( on)?:? (.*)")
-                    .captures(annotation_text.as_ref())
-                {
-                    let dates_hashset = match &captures[1] {
-                        "Except" | "Not Available" => &mut self.all_dates.except,
-                        "Only" => &mut self.all_dates.only,
-                        "DG Sailing only" => &mut self.dg_dates.only,
-                        other => bail!("Expect \"Except\", \"Only\", or \"DG Sailing only\" in: {:?}", other),
-                    };
-                    for date_text in captures[3].split(&[',', '&']).map(|s| s.trim()) {
-                        let date_within_range = date_range.parse_date_within(date_text).with_context(|| {
-                            format!("Failed to parse date {:?} in {:?}", date_text, annotation_text)
-                        })?;
-                        if let Some(date) = date_within_range {
-                            dates_hashset.insert(date);
-                        } else {
-                            warn!("Date is outside date range of schedule ({}): {:?}", date_range, date_text);
-                        }
-                    }
-                } else {
-                    let replaced_annotation_text = regex!(r"([!#*]*)\s*").replace(annotation_text.as_ref(), "$1 ");
-                    let replaced_annotation_text = regex!(r"[\.,]$").replace(replaced_annotation_text.as_ref(), "");
-                    let annotation_text = replaced_annotation_text.as_ref().trim();
-                    if regex!(r"^(Dangerous goods only)|(No passengers permitted - DG Sailing only)|(No passengers permitted - only sails on .*)$").is_match(annotation_text) {
-                        self.is_dg_only = true;
+    fn parse_single(&mut self, date_range: &DateRange, annotation_text: &str) -> Result<()> {
+        let mut inner = || {
+            let annotation_text = regex!(r"\.*$").replace(annotation_text, "");
+            let annotation_text = regex!(r"(?i)\bApril\b").replace_all(annotation_text.as_ref(), "Apr");
+            let annotation_text = regex!(r", \d{4}\b").replace_all(annotation_text.as_ref(), "");
+            let annotation_text = regex!(r"(?i)( & |, and | and )").replace_all(annotation_text.as_ref(), ", ");
+            let annotation_text = regex!(r"(?i)\b([a-z]{3})(\d{1,2})\b").replace_all(annotation_text.as_ref(), "$1 $2");
+            let annotation_text = regex!(r"(?i)\b([a-z]{3} \d{1,2}) ([a-z]{3} \d{1,2})\b")
+                .replace_all(annotation_text.as_ref(), "$1, $2");
+            let annotation_text = regex!(r"(?i)\b([a-z]{3}) (\d{1,2}),? (\d{1,2}),? (\d{1,2})\b")
+                .replace_all(annotation_text.as_ref(), "$1 $2, $1 $3, $1 $4");
+            let annotation_text = regex!(r"(?i)\b([a-z]{3}) (\d{1,2}),? (\d{1,2})\b")
+                .replace_all(annotation_text.as_ref(), "$1 $2, $1 $3");
+            let annotation_text = regex!(r"(?i)^([a-z]{3} \d{1,2})(, [a-z]{3} \d{1,2})* only$")
+                .replace(annotation_text.as_ref(), "Only $1$2");
+            let annotation_text = regex!(r"(?i)^(DG Sailing only .*), no other passengers permitted$")
+                .replace(annotation_text.as_ref(), "$1");
+            if let Some(captures) =
+                regex!(r"(?i)^\*(\d+:\d+ [AP]M) (Not Available|Only) on: (.*)\*").captures(annotation_text.as_ref())
+            {
+                let time_text = &captures[1];
+                let time = Time::parse(
+                    time_text,
+                    format_description!(
+                        "[hour repr:12 padding:none]:[minute] [period case:lower case_sensitive:false]"
+                    ),
+                )
+                .with_context(|| format!("Failed to parse time: {:?}", time_text))?;
+                let dates = self.star_dates_by_time.entry(time).or_insert_with(AnnotationDates::new);
+                let dates_hashset = match &captures[2] {
+                    "Not Available" => &mut dates.except,
+                    "Only" => &mut dates.only,
+                    other => bail!("Expect \"Not Available\" or \"Only\" in: {:?}", other),
+                };
+                for date_text in captures[3].split(',').map(|s| s.trim()) {
+                    let date_within_range = date_range.parse_date_within(date_text).with_context(|| {
+                        format!("Failed to parse sailing date {:?} in {:?}", date_text, annotation_text)
+                    })?;
+                    if let Some(date) = date_within_range {
+                        dates_hashset.insert(date);
                     } else {
-                        match annotation_text {
-                            "! Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time are offered priority on this sailing" => {
-                                text_date_restriction(
-                                    &mut self.all_notes,
-                                    "Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time are offered priority on this sailing"
-                                );
-                            }
-                            "Foot passengers only" => {
-                                text_date_restriction(&mut self.all_notes, "Foot passengers only");
-                            }
-                            "Note: This sailing departs just after midnight" => {
-                                text_date_restriction(&mut self.all_notes, "This sailing departs just after midnight");
-                            }
-                            "This sailing departs just before midnight" => {
-                                text_date_restriction(&mut self.all_notes, "This sailing departs just before midnight");
-                            }
-                            "No sailings available on this route for these dates" => {}
-                            _ => bail!("Unrecognized annotation text: {:?}", annotation_text),
-                        }
+                        warn!("Date is outside date range of schedule ({}): {:?}", date_range, date_text);
                     }
                 }
-                Ok(())
-            };
-            inner().with_context(|| format!("Failed to parse annotation: {:?}", annotation_text.as_ref()))?;
+            } else if let Some(captures) = regex!(r"(?i)^(Except|Not Available|Only|DG Sailing only)( on)?:? (.*)")
+                .captures(annotation_text.as_ref())
+            {
+                let dates_hashset = match &captures[1] {
+                    "Except" | "Not Available" => &mut self.all_dates.except,
+                    "Only" => &mut self.all_dates.only,
+                    "DG Sailing only" => &mut self.dg_dates.only,
+                    other => bail!("Expect \"Except\", \"Only\", or \"DG Sailing only\" in: {:?}", other),
+                };
+                for date_text in captures[3].split(&[',', '&']).map(|s| s.trim()) {
+                    let date_within_range = date_range
+                        .parse_date_within(date_text)
+                        .with_context(|| format!("Failed to parse date {:?} in {:?}", date_text, annotation_text))?;
+                    if let Some(date) = date_within_range {
+                        dates_hashset.insert(date);
+                    } else {
+                        warn!("Date is outside date range of schedule ({}): {:?}", date_range, date_text);
+                    }
+                }
+            } else {
+                let replaced_annotation_text = regex!(r"([!#*]*)\s*").replace(annotation_text.as_ref(), "$1 ");
+                let replaced_annotation_text = regex!(r"[\.,]$").replace(replaced_annotation_text.as_ref(), "");
+                let annotation_text = replaced_annotation_text.trim();
+                if regex!(r"^(Dangerous goods only)|(No passengers permitted - DG Sailing only)|(No passengers permitted - only sails on .*)$").is_match(annotation_text) {
+                    self.is_dg_only = true;
+                } else {
+                    match annotation_text {
+                        "! Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time are offered priority on this sailing" => {
+                            text_date_restriction(
+                                &mut self.all_notes,
+                                "Saturna-bound vehicles arriving at the booth at least 15 minutes prior to sailing time are offered priority on this sailing"
+                            );
+                        }
+                        "Foot passengers only" => {
+                            text_date_restriction(&mut self.all_notes, "Foot passengers only");
+                        }
+                        "Note: This sailing departs just after midnight" => {
+                            text_date_restriction(&mut self.all_notes, "This sailing departs just after midnight");
+                        }
+                        "This sailing departs just before midnight" => {
+                            text_date_restriction(&mut self.all_notes, "This sailing departs just before midnight");
+                        }
+                        "No sailings available on this route for these dates" => {}
+                        _ => bail!("Unrecognized annotation text: {:?}", annotation_text),
+                    }
+                }
+            }
+            Ok(())
+        };
+        inner().with_context(|| format!("Failed to parse annotation: {:?}", annotation_text))
+    }
+
+    pub fn parse<T: AsRef<str>, I: IntoIterator<Item = T>>(
+        &mut self,
+        date_range: &DateRange,
+        annotation_texts: I,
+    ) -> Result<()> {
+        for annotation_text in annotation_texts {
+            if let Some(captures) = regex!(r"(?i)^((Except|Not Available|Only)( on)?:? [a-z]* \d*) (! .*)")
+                .captures(annotation_text.as_ref())
+            {
+                self.parse(date_range, [&captures[1], &captures[4]])?;
+            } else {
+                self.parse_single(date_range, annotation_text.as_ref())?;
+            }
         }
         Ok(())
     }

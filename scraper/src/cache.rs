@@ -19,7 +19,8 @@ pub struct Cache<'a> {
 
 impl<'a> Cache<'a> {
     pub fn new(max_cache_age: Duration, project_dirs: &'a ProjectDirs) -> Cache<'a> {
-        let reqwest_client = reqwest::Client::new();
+        let reqwest_client =
+            reqwest::ClientBuilder::new().cookie_store(true).build().expect("Build build reqwest client to succeed");
         Cache { max_cache_age, project_dirs, reqwest_client }
     }
 

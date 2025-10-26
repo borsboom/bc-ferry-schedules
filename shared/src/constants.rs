@@ -38,7 +38,7 @@ pub static ALL_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
         // Route 12 (Brentwood/Mill Bay)
         vec![Terminal::BTW, Terminal::MIL],
         // Route 20 (Chemainus/Thetis/Penelakut)
-        vec![Terminal::CHM, Terminal::THT, Terminal::PEN],
+        vec![Terminal::CHM, Terminal::THT], // TEMPORARILY DISABLED: Terminal::PEN
     ];
     routes.iter().flat_map(|terminals| Terminal::combinations(terminals)).collect()
 });

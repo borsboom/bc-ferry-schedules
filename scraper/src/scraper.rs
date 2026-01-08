@@ -148,7 +148,7 @@ async fn scrape_schedule(
                 items: vec![],
                 source_url: source_url.to_string(),
                 refreshed_at: now_vancouver(),
-                alerts: vec![Alert {message: "THIS SCHEDULE IS CURRENTLY UNAVAILABLE!  BC Ferries has re-worked the schedule page on their website and the scraper needs to be updated to understand it.  I'm working on it!".to_string(), level: AlertLevel::Danger}],
+                alerts: vec![Alert {message: "THIS SCHEDULE IS CURRENTLY UNAVAILABLE!  BC Ferries has update the schedule format on their website and the scraper needs to be updated to understand it.".to_string(), level: AlertLevel::Danger}],
             }));
         }
         info!("Parsing schedule for {}, {}", terminal_pair, date_range);
@@ -164,6 +164,11 @@ async fn scrape_schedule(
                 alerts: vec![],
             })) as Result<_>
         } else if index == 0 {
+            for elem in document.select(selector!("div.seasonalSchedulesContainer div.text-center")) {
+                if element_text(&elem).contains("Seasonal schedules have not been posted for these dates") {
+                    return Ok(None);
+                }
+            }
             // If the table element is missing in the initial schedule page for the route, we have a problem
             bail!("Missing table element in schedule");
         } else {

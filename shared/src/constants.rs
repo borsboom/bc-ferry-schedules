@@ -30,14 +30,7 @@ pub static ALL_TERMINAL_PAIRS: Lazy<HashSet<TerminalPair>> = Lazy::new(|| {
         // Route 4 (Fulford Harbour/Swartz Bay)
         vec![Terminal::FUL, Terminal::SWB],
         // Route 5 (Swartz Bay/Southern Gulf Islands)
-        vec![
-            Terminal::SWB,
-            // TEMPORARILY DISABLED: Terminal::PLH,
-            Terminal::POB,
-            Terminal::PSB,
-            Terminal::PST,
-            Terminal::PVB,
-        ],
+        vec![Terminal::SWB, Terminal::PLH, Terminal::POB, Terminal::PSB, Terminal::PST, Terminal::PVB],
         // Route 6 (Vesuvius/Crofton)
         vec![Terminal::VES, Terminal::CFT],
         // Route 9 (Tsawwassen/Southern Gulf Islands)

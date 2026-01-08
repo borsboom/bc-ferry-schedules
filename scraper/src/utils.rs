@@ -22,9 +22,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 pub fn parse_schedule_time(text: &str) -> Result<Time> {
     const SCHEDULE_TIME_FORMATS: &[&TimeFormat] = &[
         format_description!("[hour repr:12 padding:none]:[minute] [period case:lower case_sensitive:false]"),
-        format_description!("[hour repr:12 padding:none]:[minute][period case:lower case_sensitive:false]"),
-        format_description!("[hour repr:12 padding:none];[minute] [period case:lower case_sensitive:false]"),
-        format_description!("[hour repr:12 padding:none].[minute] [period case:lower case_sensitive:false]"),
+        format_description!("1/1/1900 [hour repr:12 padding:none]:[minute] [period case:lower case_sensitive:false]"),
     ];
     for format in SCHEDULE_TIME_FORMATS {
         if let Ok(time) = Time::parse(text, format) {

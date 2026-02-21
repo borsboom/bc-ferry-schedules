@@ -7,24 +7,6 @@ use crate::macros::*;
 use crate::types::*;
 use crate::utils::*;
 
-fn parse_schedule_path_query(schedule_path_query: &str) -> Result<DateRange> {
-    let captures = &regex!("departureDate=([0-9-]*)|departureDateCode=R[0-9]+_([0-9_]*)")
-        .captures(schedule_path_query)
-        .ok_or_else(|| {
-            anyhow!(
-                "Failed to find departureDate or departureDateCode=R9 in schedule path/query: {:?}",
-                schedule_path_query
-            )
-        })?;
-    let (text, separator) = match (captures.get(1), captures.get(2)) {
-        (Some(text), _) => (text, "-"),
-        (None, Some(text)) => (text, "_"),
-        (None, None) => panic!("Expect capture to be available when regex matches"),
-    };
-    DateRange::parse(text.as_str(), format_description!("[year][month][day]"), separator)
-        .with_context(|| format!("Failed to parse schedule path/query date range: {:?}", text))
-}
-
 fn parse_annotations(
     depart_times_annotations_texts: Vec<String>,
     date_range: &DateRange,
@@ -131,12 +113,21 @@ async fn scrape_schedule(
     document: &Html,
     terminal_pair: TerminalPair,
     index: usize,
-    schedule_path_query_text: &str,
     today: Date,
 ) -> Result<Option<Schedule>> {
     let inner = async {
-        let date_range = parse_schedule_path_query(schedule_path_query_text)
-            .with_context(|| format!("Failed to schedule path/query: {:?}", schedule_path_query_text))?;
+        let date_range_text = element_text(
+            &document
+                .select(selector!("div.schedule-custom-calendar a"))
+                .next()
+                .context("Missing schedule calendar header link element")?,
+        );
+        let date_range = DateRange::parse(
+            &date_range_text,
+            format_description!("[month repr:short case_sensitive:false] [day], [year]"),
+            " - ",
+        )
+        .with_context(|| format!("Failed to parse date range: {:?}", date_range_text))?;
         if !should_scrape_schedule_date(date_range, today, options.date) {
             return Ok(None);
         }
@@ -203,24 +194,14 @@ pub async fn scrape_route_schedules(
                 anyhow!("Missing schedule path/query in date range link element: {}", schedule_path_query_elem.html())
             })?;
             let opt_schedule = if index == 0 {
-                scrape_schedule(
-                    options,
-                    &base_url,
-                    &base_document,
-                    terminal_pair,
-                    index,
-                    schedule_path_query_text,
-                    today,
-                )
-                .await?
+                scrape_schedule(options, &base_url, &base_document, terminal_pair, index, today).await?
             } else {
                 let source_url = format!("{}{}", BCFERRIES_BASE_URL, schedule_path_query_text);
                 let document = cache
                     .get_html(&source_url, &HTML_ERROR_REGEX)
                     .await
                     .with_context(|| format!("Failed to download schedule HTML from: {:?}", source_url))?;
-                scrape_schedule(options, &source_url, &document, terminal_pair, index, schedule_path_query_text, today)
-                    .await?
+                scrape_schedule(options, &source_url, &document, terminal_pair, index, today).await?
             };
             opt_schedule.iter().for_each(|s| debug!("Parsed schedule: {:#?}", s));
             schedules.extend(opt_schedule);

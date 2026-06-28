@@ -61,6 +61,15 @@ fn parse_stops(stops_texts: Vec<String>) -> Result<Vec<Stop>> {
 }
 
 fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<ScheduleItem>> {
+    static DATE_RANGE_TO_SKIP: DateRange = DateRange { from: date!(2026 - 11 - 25), to: date!(2027 - 05 - 06) };
+    static DEPART_TIME_TO_SKIP: Lazy<DepartTimeAndRowAnnotations> = Lazy::new(|| DepartTimeAndRowAnnotations {
+        time: time!(14:30),
+        row_dates: AnnotationDates {
+            only: HashSet::from([date!(2026 - 12 - 29), date!(2026 - 12 - 22)]),
+            except: HashSet::new(),
+        },
+        row_notes: AnnotationNotes { map: HashMap::new() },
+    });
     let inner = || {
         let mut items = Vec::new();
         for day_row_elem in table_elem.select(selector!("thead tr")) {
@@ -89,6 +98,13 @@ fn parse_table(table_elem: ElementRef, date_range: &DateRange) -> Result<Vec<Sch
                 ensure!(depart_times.len() == 1, "Expect exactly one depart time in row");
                 let depart_time = depart_times.into_iter().next().expect("Expect at least one depart time in row");
                 let weekday = parse_weekday(weekday_text)?;
+                if *date_range == DATE_RANGE_TO_SKIP
+                    && weekday == Weekday::Wednesday
+                    && depart_time == *DEPART_TIME_TO_SKIP
+                {
+                    // This is a workaround for an error in BC Ferries' schedule
+                    continue;
+                }
                 let arrive_time = parse_arrive_time_or_duration(depart_time.time, &element_text(&cell_elems[2]))?;
                 if arrive_time != depart_time.time {
                     let stops = parse_stops(element_texts(&cell_elems[4]))?;

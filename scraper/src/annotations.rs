@@ -1,13 +1,13 @@
 use crate::imports::*;
 use crate::macros::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AnnotationDates {
     pub only: HashSet<Date>,
     pub except: HashSet<Date>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AnnotationNotes {
     pub map: HashMap<Cow<'static, str>, AnnotationDates>,
 }
@@ -168,8 +168,9 @@ impl Annotations {
                         warn!("Date is outside date range of schedule ({}): {:?}", date_range, date_text);
                     }
                 }
-            } else if let Some(captures) = regex!(r"(?i)^(Except|Not Available|Only|DG Sailing only)( on)?:? (.*)")
-                .captures(annotation_text.as_ref())
+            } else if let Some(captures) =
+                regex!(r"(?i)^(Except|Not Available|Only|DG Sailing only)( on| onon)?:? (.*)")
+                    .captures(annotation_text.as_ref())
             {
                 let dates_hashset = match &captures[1] {
                     "Except" | "Not Available" => &mut self.all_dates.except,

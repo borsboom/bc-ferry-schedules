@@ -3,7 +3,7 @@ use crate::imports::*;
 use crate::macros::*;
 use crate::utils::*;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct DepartTimeAndRowAnnotations {
     pub time: Time,
     pub row_dates: AnnotationDates,

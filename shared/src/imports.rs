@@ -17,7 +17,7 @@ pub use std::rc::Rc;
 pub use std::str::FromStr;
 pub use strum::IntoEnumIterator;
 pub use strum_macros::{Display, EnumIter, EnumString};
-pub use time::macros::{date, format_description};
+pub use time::macros::{date, format_description, time};
 pub use time::parsing::Parsable;
 pub use time::{Date, Duration, Month, OffsetDateTime, Time, Weekday};
 pub use time_tz::{timezones, OffsetDateTimeExt};

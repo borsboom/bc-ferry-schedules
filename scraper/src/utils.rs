@@ -65,17 +65,15 @@ fn terminal_from_schedule_stop_text(stop_text: &str) -> Result<Terminal> {
     match &stop_text[..] {
         "chemainus" => Ok(Terminal::CHM),
         "galiano" | "galiano island (sturdies bay)" => Ok(Terminal::PSB),
-        "mayne"
-        | "mayne island (village bay)"
-        | "mayne island (village bay"
-        | "mayne island {village bay)"
-        | "mayne island (village bay)except on oct 9" => Ok(Terminal::PVB),
+        "mayne" | "mayne island (village bay)" | "mayne island (village bay" | "mayne island {village bay)" => {
+            Ok(Terminal::PVB)
+        }
         "pender" | "pender island (otter bay)" => Ok(Terminal::POB),
         "penelakut island (telegraph harbour)" | "enelakut island (telegraph harbour)" => Ok(Terminal::PEN),
         "salt spring" | "salt spring island (long harbour)" => Ok(Terminal::PLH),
         "saturna" | "saturna island (lyall harbour)" | "saturna island (lyall harbour" => Ok(Terminal::PST),
         "thetis island (preedy harbour)" => Ok(Terminal::THT),
-        "victoria (swartz bay)" | "swartz bay" => Ok(Terminal::SWB),
+        "swartz bay" | "victoria (swartz bay)" | "victoria (swartz bay" => Ok(Terminal::SWB),
         _ => Err(anyhow!("Unknown schedule stop name: {:?}", stop_text)),
     }
 }

@@ -1,3 +1,4 @@
+mod constants;
 mod imports;
 mod sailings_component;
 mod sailings_processor;
@@ -6,6 +7,7 @@ mod utils;
 
 use reqwasm::http;
 
+use crate::constants::*;
 use crate::imports::*;
 use crate::sailings_component::*;
 use crate::types::*;
@@ -39,6 +41,37 @@ fn navbar_component() -> Html {
                 </ul>
             </div>
         </nav>
+    }
+}
+
+fn out_of_date_alert_html(schedules_state: &SchedulesState) -> Html {
+    let opt_most_recent_refreshed_at = if let SchedulesState::Loaded(loaded) = schedules_state {
+        loaded.values().flat_map(|schedules| schedules.iter().map(|schedule| schedule.refreshed_at)).max()
+    } else {
+        None
+    };
+    html! {
+        if let Some(refreshed_at) = opt_most_recent_refreshed_at {
+            if now_vancouver() - refreshed_at > OUT_OF_DATE_ALERT_DURATION {
+                <div class="alert alert-danger text-center mt-0">
+                    <div>
+                        <b>{ "There is a problem updating the schedules from the BC Ferries web site" }</b>
+                        { ".  They seem to be blocking scrapers like this one." }
+                    </div>
+                    <div>
+                        { "The last successful update was " }
+                        <b>
+                            { human_time(refreshed_at) }
+                        </b>
+                        { ".  Please visit "}
+                        <a href="https://www.bcferries.com/routes-fares/schedules" target="_blank">
+                            { "BC Ferries own schedules page" }
+                        </a>
+                        { " for up-to-date sailing information."}
+                    </div>
+                </div>
+            }
+        }
     }
 }
 
@@ -217,6 +250,7 @@ fn app() -> Html {
             <BrowserRouter>
                 <div class="container">
                     <Navbar/>
+                    { out_of_date_alert_html(&*schedules_state) }
                     <Switch<Route> render={Switch::render(switch_route)}/>
                     { footer_html() }
                 </div>

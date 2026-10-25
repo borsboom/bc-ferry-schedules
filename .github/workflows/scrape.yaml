@@ -2,7 +2,7 @@ name: scrape
 
 on:
   schedule:
-    - cron: '44 21 * * *'
+    - cron: '44 21 * * SUN'
       timezone: "America/Vancouver"
   repository_dispatch:
     types: [scrape]

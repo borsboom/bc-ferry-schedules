@@ -64,7 +64,7 @@ fn terminal_from_schedule_stop_text(stop_text: &str) -> Result<Terminal> {
     let stop_text = stop_text.to_lowercase();
     match &stop_text[..] {
         "chemainus" => Ok(Terminal::CHM),
-        "galiano" | "galiano island (sturdies bay)" => Ok(Terminal::PSB),
+        "galiano" | "galiano island (sturdies bay)" | "1 stop galiano island (sturdies bay)" => Ok(Terminal::PSB),
         "mayne" | "mayne island (village bay)" | "mayne island (village bay" | "mayne island {village bay)" => {
             Ok(Terminal::PVB)
         }
